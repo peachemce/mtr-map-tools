@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         MTR Map Tools - Folityn Schematic v3.2
+// @name         MTR Map Tools - Folityn Schematic v3.3
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      3.2.0
-// @description  One-stroke-per-public-line octilinear Folityn renderer with stable lanes and native MTR filters.
+// @version      3.3.0
+// @description  Corridor-first Folityn renderer: one public line, stable parallel lanes, strict 0/45/90 geometry, custom central interchange.
 // @match        http://localhost:8888/*
 // @run-at       document-idle
 // @grant        none
@@ -15,13 +15,15 @@
   'use strict';
 
   const NS = 'http://www.w3.org/2000/svg';
-  const KEY = 'folityn-schematic-v32-';
+  const KEY = 'folityn-schematic-v33-';
   const CFG = {
     targetSpacing: 82,
     lineWidth: 5,
-    laneGap: 5.8,
+    laneGap: 6.2,
     cornerRadius: 18,
-    pad: 155,
+    pad: 165,
+    centerDx: 74,
+    centerDy: 82,
   };
 
   const state = {
@@ -155,8 +157,6 @@
           colorCounts: new Map(),
           edges: new Set(),
           nodes: new Set(),
-          conflicts: new Set(),
-          lane: 0,
         };
         routeGroups.set(groupKey, group);
       }
@@ -206,30 +206,12 @@
       }
     }
 
-    for (const edge of edges.values()) {
-      const ids = [...edge.routes];
-      for (let i = 0; i < ids.length; i++) {
-        for (let j = i + 1; j < ids.length; j++) {
-          routeGroups.get(ids[i])?.conflicts.add(ids[j]);
-          routeGroups.get(ids[j])?.conflicts.add(ids[i]);
-        }
-      }
-    }
-
     const groups = [...routeGroups.values()].sort((a, b) =>
       modeOrder(a.mode) - modeOrder(b.mode) ||
       a.label.localeCompare(b.label, undefined, { numeric: true }) ||
       a.id.localeCompare(b.id)
     );
-
-    const candidates = [0];
-    for (let i = 1; i <= 24; i++) candidates.push(i, -i);
-    const assigned = new Map();
-    for (const group of groups) {
-      const used = new Set([...group.conflicts].map(id => assigned.get(id)).filter(v => v !== undefined));
-      group.lane = candidates.find(v => !used.has(v)) ?? 0;
-      assigned.set(group.id, group.lane);
-    }
+    const routeRank = new Map(groups.map((g, i) => [g.id, i]));
 
     const original = new Map();
     for (const [id, pts] of occurrences) {
@@ -275,7 +257,7 @@
     }
 
     return {
-      stationMeta, routeGroups, groups, edges, original, geo, adjacency,
+      stationMeta, routeGroups, groups, routeRank, edges, original, geo, adjacency,
       nodeRouteGroups, routeEndpoints, transferPairs,
     };
   }
@@ -352,10 +334,11 @@
     }
 
     const byName = new Map([...model.stationMeta.values()].map(s => [norm(s.name), s.id]));
-    const names = ['Rogowska Centrum Miejskie', 'Witkowskiego', 'Rogowska/Dąbka', 'Rogowska'];
-    const ids = names.map(n => byName.get(norm(n))).filter(id => id && pos.has(id));
-    if (ids.length >= 3) {
-      const firstId = ids[0], lastId = ids.at(-1);
+
+    const rogowskaNames = ['Rogowska Centrum Miejskie', 'Witkowskiego', 'Rogowska/Dąbka', 'Rogowska'];
+    const rog = rogowskaNames.map(n => byName.get(norm(n))).filter(id => id && pos.has(id));
+    if (rog.length >= 3) {
+      const firstId = rog[0], lastId = rog.at(-1);
       const first = { ...pos.get(firstId) };
       const rawFirst = model.geo.get(firstId), rawLast = model.geo.get(lastId);
       const sx = Math.sign((rawLast?.x ?? first.x + 1) - (rawFirst?.x ?? first.x)) || 1;
@@ -363,86 +346,39 @@
       const inv = 1 / Math.sqrt(2);
       let cursor = 0;
       pos.set(firstId, first);
-      for (let i = 1; i < ids.length; i++) {
-        const ar = model.geo.get(ids[i - 1]), br = model.geo.get(ids[i]);
+      for (let i = 1; i < rog.length; i++) {
+        const ar = model.geo.get(rog[i - 1]), br = model.geo.get(rog[i]);
         cursor += clamp(ar && br ? dist(ar, br) : CFG.targetSpacing, CFG.targetSpacing * 0.72, CFG.targetSpacing * 1.35);
-        pos.set(ids[i], { x: first.x + sx * inv * cursor, y: first.y + sy * inv * cursor });
+        pos.set(rog[i], { x: first.x + sx * inv * cursor, y: first.y + sy * inv * cursor });
       }
     }
+
+    const centralny = byName.get(norm('Folityn Centralny'));
+    const larcho = byName.get(norm('Rondo Larcho'));
+    const rcm = byName.get(norm('Rogowska Centrum Miejskie'));
+    if (centralny && larcho && rcm && pos.has(centralny) && pos.has(larcho) && pos.has(rcm)) {
+      const base = pos.get(centralny);
+      const old = new Map([[centralny, { ...pos.get(centralny) }], [larcho, { ...pos.get(larcho) }], [rcm, { ...pos.get(rcm) }]]);
+      const target = new Map([
+        [centralny, { x: base.x, y: base.y - CFG.centerDy * 0.55 }],
+        [larcho, { x: base.x - CFG.centerDx, y: base.y + CFG.centerDy * 0.45 }],
+        [rcm, { x: base.x + CFG.centerDx, y: base.y + CFG.centerDy * 0.45 }],
+      ]);
+      for (const [id, p] of target) pos.set(id, p);
+
+      for (const hub of [centralny, larcho, rcm]) {
+        const before = old.get(hub), after = target.get(hub);
+        const dx = after.x - before.x, dy = after.y - before.y;
+        for (const edge of model.adjacency.get(hub) || []) {
+          const other = edge.a === hub ? edge.b : edge.a;
+          if ([centralny, larcho, rcm].includes(other) || !pos.has(other)) continue;
+          const p = pos.get(other);
+          pos.set(other, { x: p.x + dx * 0.42, y: p.y + dy * 0.42 });
+        }
+      }
+    }
+
     return pos;
-  }
-
-  function dedupeCollinear(points) {
-    if (points.length < 3) return points;
-    const out = [points[0]];
-    for (let i = 1; i < points.length - 1; i++) {
-      const a = out.at(-1), b = points[i], c = points[i + 1];
-      const dx1 = b.x - a.x, dy1 = b.y - a.y;
-      const dx2 = c.x - b.x, dy2 = c.y - b.y;
-      if (Math.abs(dx1 * dy2 - dy1 * dx2) < 0.001 && dx1 * dx2 + dy1 * dy2 >= 0) continue;
-      out.push(b);
-    }
-    out.push(points.at(-1));
-    return out;
-  }
-
-  function routeTrails(group) {
-    const adjacency = new Map();
-    for (const key of group.edges) {
-      const [a, b] = key.split('|');
-      if (!adjacency.has(a)) adjacency.set(a, []);
-      if (!adjacency.has(b)) adjacency.set(b, []);
-      adjacency.get(a).push({ key, other: b });
-      adjacency.get(b).push({ key, other: a });
-    }
-    const visited = new Set();
-    const trails = [];
-
-    function walk(start, firstEdge) {
-      const nodes = [start];
-      let current = start;
-      let edgeRec = firstEdge;
-      while (edgeRec && !visited.has(edgeRec.key)) {
-        visited.add(edgeRec.key);
-        current = edgeRec.other;
-        nodes.push(current);
-        const options = (adjacency.get(current) || []).filter(e => !visited.has(e.key));
-        if ((adjacency.get(current)?.length || 0) !== 2 || options.length !== 1) break;
-        edgeRec = options[0];
-      }
-      return nodes;
-    }
-
-    const starts = [...adjacency.keys()].filter(id => (adjacency.get(id)?.length || 0) !== 2);
-    for (const start of starts) {
-      for (const edge of adjacency.get(start) || []) {
-        if (!visited.has(edge.key)) {
-          const nodes = walk(start, edge);
-          if (nodes.length >= 2) trails.push(nodes);
-        }
-      }
-    }
-    for (const [start, list] of adjacency) {
-      for (const edge of list) {
-        if (!visited.has(edge.key)) {
-          const nodes = walk(start, edge);
-          if (nodes.length >= 2) trails.push(nodes);
-        }
-      }
-    }
-    return trails;
-  }
-
-  function buildTrailPath(nodeIds, positions) {
-    const points = [];
-    for (let i = 1; i < nodeIds.length; i++) {
-      const a = positions.get(nodeIds[i - 1]), b = positions.get(nodeIds[i]);
-      if (!a || !b) continue;
-      const segment = octilinearPoints(a, b);
-      if (!points.length) points.push(...segment);
-      else points.push(...segment.slice(1));
-    }
-    return dedupeCollinear(points);
   }
 
   function offsetPolyline(points, offset) {
@@ -464,7 +400,7 @@
       const ml = Math.hypot(mx, my);
       if (ml < 0.001) return { x: p.x + n2.x * offset, y: p.y + n2.y * offset };
       mx /= ml; my /= ml;
-      const dot = Math.max(0.45, mx * n2.x + my * n2.y);
+      const dot = Math.max(0.5, mx * n2.x + my * n2.y);
       const miter = offset / dot;
       return { x: p.x + mx * miter, y: p.y + my * miter };
     });
@@ -489,15 +425,28 @@
     return d + ` L ${last.x} ${last.y}`;
   }
 
-  function oneRoutePath(group, positions) {
-    const subpaths = [];
-    const offset = group.lane * CFG.laneGap;
-    for (const trail of routeTrails(group)) {
-      const center = buildTrailPath(trail, positions);
-      if (center.length < 2) continue;
-      subpaths.push(roundedPath(offsetPolyline(center, offset)));
+  function visibleRouteIds(edge, model) {
+    return [...edge.routes]
+      .filter(id => state.visible.has(model.routeGroups.get(id)?.mode))
+      .sort((a, b) => (model.routeRank.get(a) ?? 0) - (model.routeRank.get(b) ?? 0));
+  }
+
+  function routePathData(group, model, positions) {
+    const chunks = [];
+    for (const key of group.edges) {
+      const edge = model.edges.get(key);
+      if (!edge) continue;
+      const a = positions.get(edge.a), b = positions.get(edge.b);
+      if (!a || !b) continue;
+      const shared = visibleRouteIds(edge, model);
+      const idx = shared.indexOf(group.id);
+      if (idx < 0) continue;
+      const offset = (idx - (shared.length - 1) / 2) * CFG.laneGap;
+      const center = octilinearPoints(a, b);
+      const line = offsetPolyline(center, offset);
+      chunks.push(roundedPath(line));
     }
-    return subpaths.join(' ');
+    return chunks.join(' ');
   }
 
   function setOriginalVisible(show) {
@@ -512,11 +461,7 @@
     const vals = [...positions.values()];
     const minX = Math.min(...vals.map(p => p.x)), maxX = Math.max(...vals.map(p => p.x));
     const minY = Math.min(...vals.map(p => p.y)), maxY = Math.max(...vals.map(p => p.y));
-    return {
-      x: minX - CFG.pad, y: minY - CFG.pad,
-      w: Math.max(500, maxX - minX + CFG.pad * 2),
-      h: Math.max(360, maxY - minY + CFG.pad * 2),
-    };
+    return { x: minX - CFG.pad, y: minY - CFG.pad, w: Math.max(500, maxX - minX + CFG.pad * 2), h: Math.max(360, maxY - minY + CFG.pad * 2) };
   }
 
   function applyView() {
@@ -527,21 +472,22 @@
     svg.style.cursor = 'grab';
     svg.style.userSelect = 'none';
     svg.style.webkitUserSelect = 'none';
-    const endDrag = () => { state.drag = null; svg.style.cursor = 'grab'; };
 
+    const endDrag = () => { state.drag = null; svg.style.cursor = 'grab'; };
     svg.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
-      state.drag = { clientX: e.clientX, clientY: e.clientY, viewX: state.view.x, viewY: state.view.y };
+      state.drag = { x: e.clientX, y: e.clientY, viewX: state.view.x, viewY: state.view.y };
       svg.style.cursor = 'grabbing';
-      e.preventDefault(); e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
     }, true);
 
     window.addEventListener('mousemove', e => {
       if (!state.drag || (e.buttons & 1) !== 1) { if (state.drag && (e.buttons & 1) !== 1) endDrag(); return; }
       const rect = svg.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
-      state.view.x = state.drag.viewX - (e.clientX - state.drag.clientX) / rect.width * state.view.w;
-      state.view.y = state.drag.viewY - (e.clientY - state.drag.clientY) / rect.height * state.view.h;
+      state.view.x = state.drag.viewX - (e.clientX - state.drag.x) / rect.width * state.view.w;
+      state.view.y = state.drag.viewY - (e.clientY - state.drag.y) / rect.height * state.view.h;
       applyView();
       e.preventDefault();
     }, true);
@@ -563,10 +509,30 @@
     svg.addEventListener('dblclick', e => { e.preventDefault(); state.view = { ...state.fitView }; applyView(); });
   }
 
+  function drawCentralComplex(layer, bg, fg) {
+    const byName = new Map([...state.model.stationMeta.values()].map(s => [norm(s.name), s.id]));
+    const c = state.positions.get(byName.get(norm('Folityn Centralny')));
+    const l = state.positions.get(byName.get(norm('Rondo Larcho')));
+    const r = state.positions.get(byName.get(norm('Rogowska Centrum Miejskie')));
+    if (!c || !l || !r) return;
+
+    const hull = `${c.x},${c.y} ${r.x},${r.y} ${l.x},${l.y}`;
+    layer.appendChild(svgEl('polygon', {
+      points: hull,
+      fill: bg,
+      'fill-opacity': 0.88,
+      stroke: fg,
+      'stroke-opacity': 0.45,
+      'stroke-width': 1.4,
+      'stroke-dasharray': '5 5',
+      'vector-effect': 'non-scaling-stroke',
+    }));
+  }
+
   function draw() {
     if (!state.layers) return;
-    const { routeLayer, transferLayer, stationLayer, labelLayer } = state.layers;
-    routeLayer.replaceChildren(); transferLayer.replaceChildren(); stationLayer.replaceChildren(); labelLayer.replaceChildren();
+    const { complexLayer, routeLayer, transferLayer, stationLayer, labelLayer } = state.layers;
+    complexLayer.replaceChildren(); routeLayer.replaceChildren(); transferLayer.replaceChildren(); stationLayer.replaceChildren(); labelLayer.replaceChildren();
 
     const bg = state.dark ? '#101827' : '#f6f8fb';
     const fg = state.dark ? '#e6edf7' : '#172033';
@@ -574,9 +540,11 @@
     const transferColor = state.dark ? '#aeb9c9' : '#455166';
     state.overlay.style.background = bg;
 
+    drawCentralComplex(complexLayer, bg, fg);
+
     for (const group of state.model.groups) {
       if (!state.visible.has(group.mode)) continue;
-      const d = oneRoutePath(group, state.positions);
+      const d = routePathData(group, state.model, state.positions);
       if (!d) continue;
       routeLayer.appendChild(svgEl('path', {
         d, fill: 'none', stroke: colorHex(group.color),
@@ -599,6 +567,7 @@
       }
     }
 
+    const centralNames = new Set([norm('Folityn Centralny'), norm('Rondo Larcho'), norm('Rogowska Centrum Miejskie')]);
     for (const [id, p] of state.positions) {
       const routeIds = [...(state.model.nodeRouteGroups.get(id) || [])]
         .filter(rid => state.visible.has(state.model.routeGroups.get(rid)?.mode));
@@ -606,10 +575,11 @@
       const meta = state.model.stationMeta.get(id);
       const count = routeIds.length;
       const degree = state.model.adjacency.get(id)?.length || 0;
-      const r = 3.8 + Math.min(8.2, Math.log2(count + 1) * 2.2);
-      const major = count >= 4 || degree >= 3;
+      const isCentral = centralNames.has(norm(meta?.name));
+      const r = isCentral ? 10.5 : 3.8 + Math.min(8.2, Math.log2(count + 1) * 2.2);
+      const major = isCentral || count >= 4 || degree >= 3;
       const marker = major
-        ? svgEl('rect', { x: p.x - r * 1.5, y: p.y - r, width: r * 3, height: r * 2, rx: r, ry: r, fill: bg, stroke: fg, 'stroke-width': 2.2, 'vector-effect': 'non-scaling-stroke' })
+        ? svgEl('rect', { x: p.x - r * 1.55, y: p.y - r, width: r * 3.1, height: r * 2, rx: r, ry: r, fill: bg, stroke: fg, 'stroke-width': isCentral ? 2.8 : 2.2, 'vector-effect': 'non-scaling-stroke' })
         : svgEl('circle', { cx: p.x, cy: p.y, r, fill: bg, stroke: fg, 'stroke-width': 1.8, 'vector-effect': 'non-scaling-stroke' });
       const title = svgEl('title'); title.textContent = `${meta?.name || id} · ${count} visible route${count === 1 ? '' : 's'}`;
       marker.appendChild(title); stationLayer.appendChild(marker);
@@ -618,10 +588,9 @@
       if (showLabel && meta?.name) {
         const text = svgEl('text', {
           x: p.x + r + 5, y: p.y - r - 3, fill: fg,
-          'font-size': major ? 11 : 9.5, 'font-family': 'system-ui, sans-serif',
-          'font-weight': major ? 700 : 550, 'paint-order': 'stroke',
-          stroke: halo, 'stroke-width': 3.8, 'stroke-linejoin': 'round',
-          'vector-effect': 'non-scaling-stroke',
+          'font-size': isCentral ? 12.5 : (major ? 11 : 9.5), 'font-family': 'system-ui, sans-serif',
+          'font-weight': isCentral ? 800 : (major ? 700 : 550), 'paint-order': 'stroke',
+          stroke: halo, 'stroke-width': 3.8, 'stroke-linejoin': 'round', 'vector-effect': 'non-scaling-stroke',
         });
         text.textContent = meta.name; labelLayer.appendChild(text);
       }
@@ -647,11 +616,11 @@
   }
 
   function installControls() {
-    document.getElementById('folityn-v32-controls')?.remove();
-    const panel = document.createElement('div'); panel.id = 'folityn-v32-controls';
-    Object.assign(panel.style, { position: 'fixed', left: '14px', bottom: '14px', zIndex: '1000000', width: '270px', padding: '11px', borderRadius: '11px', background: 'rgba(17,24,39,.97)', color: '#fff', boxShadow: '0 6px 22px rgba(0,0,0,.35)', font: '600 12px/1.35 system-ui,sans-serif' });
+    document.getElementById('folityn-v33-controls')?.remove();
+    const panel = document.createElement('div'); panel.id = 'folityn-v33-controls';
+    Object.assign(panel.style, { position: 'fixed', left: '14px', bottom: '14px', zIndex: '1000000', width: '278px', padding: '11px', borderRadius: '11px', background: 'rgba(17,24,39,.97)', color: '#fff', boxShadow: '0 6px 22px rgba(0,0,0,.35)', font: '600 12px/1.35 system-ui,sans-serif' });
     const title = document.createElement('div');
-    title.innerHTML = '<strong style="font-size:14px">Folityn schematic v3.2</strong><div style="opacity:.62;font-weight:500;margin-top:2px">one stroke per public line · 0°/45°/90° only</div>';
+    title.innerHTML = '<strong style="font-size:14px">Folityn schematic v3.3</strong><div style="opacity:.62;font-weight:500;margin-top:2px">shared corridor = shared geometry · one public line</div>';
     const modes = document.createElement('div'); modes.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:9px';
     modes.append(modeCheckbox('Light Rail', 'light_rail'), modeCheckbox('Rail', 'rail'), modeCheckbox('High Speed', 'high_speed'));
 
@@ -680,20 +649,20 @@
     row.append(schematic, original, fit);
 
     const note = document.createElement('div'); note.style.cssText = 'opacity:.58;font-weight:500;font-size:10.5px;margin-top:7px';
-    note.textContent = 'Hold left mouse to pan · wheel zoom · reverse directions + variants share one physical stroke';
+    note.textContent = 'Hold left mouse to pan · wheel zoom · straight shared corridors never braid';
     panel.append(title, modes, opts, labels, row, note); document.body.appendChild(panel);
   }
 
   function createOverlay() {
-    ['folityn-v3-overlay','folityn-v31-overlay','folityn-v32-overlay','folityn-v3-controls','folityn-v31-controls','folityn-v32-controls'].forEach(id => document.getElementById(id)?.remove());
+    ['folityn-v3-overlay','folityn-v31-overlay','folityn-v32-overlay','folityn-v33-overlay','folityn-v3-controls','folityn-v31-controls','folityn-v32-controls','folityn-v33-controls'].forEach(id => document.getElementById(id)?.remove());
     state.wrapper.style.position = 'relative';
-    const overlay = document.createElement('div'); overlay.id = 'folityn-v32-overlay';
+    const overlay = document.createElement('div'); overlay.id = 'folityn-v33-overlay';
     Object.assign(overlay.style, { position: 'absolute', inset: '0', zIndex: '30', overflow: 'hidden', pointerEvents: 'auto' });
     const svg = svgEl('svg', { width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet' });
     svg.style.display = 'block'; svg.style.pointerEvents = 'all';
-    const routeLayer = svgEl('g'), transferLayer = svgEl('g'), stationLayer = svgEl('g'), labelLayer = svgEl('g');
-    svg.append(routeLayer, transferLayer, stationLayer, labelLayer); overlay.appendChild(svg); state.wrapper.appendChild(overlay);
-    state.overlay = overlay; state.svg = svg; state.layers = { routeLayer, transferLayer, stationLayer, labelLayer };
+    const complexLayer = svgEl('g'), routeLayer = svgEl('g'), transferLayer = svgEl('g'), stationLayer = svgEl('g'), labelLayer = svgEl('g');
+    svg.append(complexLayer, routeLayer, transferLayer, stationLayer, labelLayer); overlay.appendChild(svg); state.wrapper.appendChild(overlay);
+    state.overlay = overlay; state.svg = svg; state.layers = { complexLayer, routeLayer, transferLayer, stationLayer, labelLayer };
     state.fitView = fitForPositions(state.positions); state.view = { ...state.fitView };
     installPanZoom(svg); installControls(); draw(); setOriginalVisible(!state.enabled);
   }
@@ -701,15 +670,18 @@
   async function main() {
     try {
       const [wrapper, data] = await Promise.all([waitForMap(), loadNetwork()]);
-      state.wrapper = wrapper; state.model = buildModel(data); state.positions = simplifyCorridors(state.model); createOverlay();
-      console.log('[MTR Map Tools] Folityn schematic v3.2 loaded', {
+      state.wrapper = wrapper;
+      state.model = buildModel(data);
+      state.positions = simplifyCorridors(state.model);
+      createOverlay();
+      console.log('[MTR Map Tools] Folityn schematic v3.3 loaded', {
         publicRoutes: state.model.groups.length,
         physicalEdges: state.model.edges.size,
         stations: state.positions.size,
         modes: [...new Set(state.model.groups.map(r => r.mode))],
       });
     } catch (error) {
-      console.error('[MTR Map Tools] Folityn schematic v3.2 failed:', error);
+      console.error('[MTR Map Tools] Folityn schematic v3.3 failed:', error);
     }
   }
 
