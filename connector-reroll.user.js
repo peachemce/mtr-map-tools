@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         MTR Map Tools - Folityn Professional Schematic
+// @name         MTR Map Tools - Folityn Schematic v3
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      2.0.0
-// @description  Geography-aware, corridor-first schematic renderer for dense Folityn MTR networks.
+// @version      3.0.0
+// @description  Standalone geography-preserving octilinear renderer for the Folityn MTR map.
 // @match        http://localhost:8888/*
 // @run-at       document-idle
 // @grant        none
@@ -11,15 +11,518 @@
 // @downloadURL  https://raw.githubusercontent.com/peachemce/mtr-map-tools/main/connector-reroll.user.js
 // ==/UserScript==
 
-(async () => {
+(() => {
   'use strict';
-  try {
-    const packed = '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';
-    const bytes = Uint8Array.from(atob(packed), c => c.charCodeAt(0));
-    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-    const source = await new Response(stream).text();
-    (0, eval)(source);
-  } catch (error) {
-    console.error('[MTR Map Tools] failed to unpack Folityn renderer:', error);
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const KEY = 'folityn-schematic-v3-';
+  const CFG = {
+    targetSpacing: 78,
+    lineWidth: 4.8,
+    laneGap: 6.2,
+    cornerRadius: 15,
+    pad: 140,
+  };
+
+  const state = {
+    enabled: localStorage.getItem(KEY + 'enabled') !== '0',
+    dark: localStorage.getItem(KEY + 'dark') !== '0',
+    labels: localStorage.getItem(KEY + 'labels') || 'key',
+    transfers: localStorage.getItem(KEY + 'transfers') !== '0',
+    visible: new Set(JSON.parse(localStorage.getItem(KEY + 'modes') || '["light_rail","rail","high_speed","bus"]')),
+    wrapper: null,
+    canvas: null,
+    overlay: null,
+    svg: null,
+    model: null,
+    positions: null,
+    view: null,
+    fitView: null,
+    drag: null,
+  };
+
+  const norm = s => String(s ?? '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+  const pairKey = (a, b) => a < b ? `${a}|${b}` : `${b}|${a}`;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const colorHex = value => `#${((Number(value) >>> 0) & 0xffffff).toString(16).padStart(6, '0')}`;
+  const dist = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
+
+  function median(values) {
+    if (!values.length) return 1;
+    const a = [...values].sort((x, y) => x - y);
+    const m = Math.floor(a.length / 2);
+    return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
   }
+
+  function modeOf(type) {
+    const t = String(type || '').toLowerCase().replace(/[\s-]+/g, '_');
+    if (t.includes('high_speed') || (t.includes('high') && t.includes('speed'))) return 'high_speed';
+    if (t.includes('light_rail') || (t.includes('light') && t.includes('rail')) || t.includes('tram')) return 'light_rail';
+    if (t === 'train' || t === 'rail' || t.includes('train') || t.includes('normal_rail')) return 'rail';
+    return 'bus';
+  }
+
+  function modeOrder(mode) {
+    return ({ high_speed: 0, rail: 1, light_rail: 2, bus: 3 })[mode] ?? 4;
+  }
+
+  function publicLabel(route) {
+    const v = route.routeNumber ?? route.number ?? route.route_number ?? route.name ?? route.id;
+    return String(v ?? route.id).trim();
+  }
+
+  function svgEl(tag, attrs = {}) {
+    const el = document.createElementNS(NS, tag);
+    for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, String(value));
+    return el;
+  }
+
+  async function waitForMap() {
+    for (;;) {
+      const wrapper = document.querySelector('app-map .wrapper, .wrapper');
+      const canvas = wrapper?.querySelector('canvas');
+      if (wrapper && canvas) return { wrapper, canvas };
+      await new Promise(r => setTimeout(r, 250));
+    }
+  }
+
+  async function loadNetwork() {
+    const response = await fetch('/mtr/api/map/stations-and-routes?dimension=0', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`MTR network request failed (${response.status})`);
+    const json = await response.json();
+    return json?.data ?? json;
+  }
+
+  function buildModel(data) {
+    const stationByRawId = new Map();
+    const logicalByName = new Map();
+    const rawToLogical = new Map();
+
+    for (const s of data.stations || []) {
+      stationByRawId.set(s.id, s);
+      const key = norm(s.name) || `id:${s.id}`;
+      let logical = logicalByName.get(key);
+      if (!logical) {
+        logical = { id: `name:${key}`, name: String(s.name || s.id), rawIds: new Set(), connections: new Set() };
+        logicalByName.set(key, logical);
+      }
+      logical.rawIds.add(s.id);
+      rawToLogical.set(s.id, logical.id);
+    }
+
+    const stationMeta = new Map([...logicalByName.values()].map(s => [s.id, s]));
+    for (const s of data.stations || []) {
+      const from = rawToLogical.get(s.id);
+      const meta = stationMeta.get(from);
+      if (!meta) continue;
+      for (const otherRaw of s.connections || []) {
+        const to = rawToLogical.get(otherRaw);
+        if (to && to !== from) meta.connections.add(to);
+      }
+    }
+
+    function ensureLogical(rawId) {
+      let id = rawToLogical.get(rawId);
+      if (id) return id;
+      const raw = stationByRawId.get(rawId);
+      const key = norm(raw?.name) || `id:${rawId}`;
+      id = `name:${key}`;
+      rawToLogical.set(rawId, id);
+      if (!stationMeta.has(id)) stationMeta.set(id, { id, name: String(raw?.name || rawId), rawIds: new Set([rawId]), connections: new Set() });
+      return id;
+    }
+
+    const occurrences = new Map();
+    const routeGroups = new Map();
+    const nodeRouteGroups = new Map();
+    const routeEndpoints = new Set();
+
+    for (const raw of data.routes || []) {
+      if (raw.hidden || !Array.isArray(raw.stations) || raw.stations.length < 2) continue;
+      const mode = modeOf(raw.type);
+      const label = publicLabel(raw);
+      const color = Number(raw.color ?? 0);
+      const groupKey = `${mode}|${label}|${color}`;
+      let group = routeGroups.get(groupKey);
+      if (!group) {
+        group = { id: groupKey, label, mode, color, sequences: [], sequenceSigs: new Set(), edges: new Set() };
+        routeGroups.set(groupKey, group);
+      }
+
+      const seq = [];
+      for (const stop of raw.stations) {
+        if (!stop?.id || !Number.isFinite(Number(stop.x)) || !Number.isFinite(Number(stop.z))) continue;
+        const node = ensureLogical(stop.id);
+        const p = { node, x: Number(stop.x), y: Number(stop.z) };
+        if (seq.at(-1)?.node !== node) seq.push(p);
+        if (!occurrences.has(node)) occurrences.set(node, []);
+        occurrences.get(node).push({ x: p.x, y: p.y });
+      }
+      if (seq.length < 2) continue;
+
+      const ids = seq.map(s => s.node);
+      const forward = ids.join('>');
+      const reverse = [...ids].reverse().join('>');
+      const signature = forward < reverse ? forward : reverse;
+      if (!group.sequenceSigs.has(signature)) {
+        group.sequenceSigs.add(signature);
+        group.sequences.push(ids);
+      }
+
+      routeEndpoints.add(ids[0]);
+      routeEndpoints.add(ids.at(-1));
+      for (const id of ids) {
+        if (!nodeRouteGroups.has(id)) nodeRouteGroups.set(id, new Set());
+        nodeRouteGroups.get(id).add(groupKey);
+      }
+      for (let i = 1; i < ids.length; i++) {
+        if (ids[i - 1] !== ids[i]) group.edges.add(pairKey(ids[i - 1], ids[i]));
+      }
+    }
+
+    const edges = new Map();
+    for (const group of routeGroups.values()) {
+      for (const key of group.edges) {
+        let edge = edges.get(key);
+        if (!edge) {
+          const [a, b] = key.split('|');
+          edge = { key, a, b, routes: new Set() };
+          edges.set(key, edge);
+        }
+        edge.routes.add(group.id);
+      }
+    }
+
+    const original = new Map();
+    for (const [id, points] of occurrences) {
+      original.set(id, {
+        x: points.reduce((s, p) => s + p.x, 0) / points.length,
+        y: points.reduce((s, p) => s + p.y, 0) / points.length,
+      });
+    }
+
+    const lengths = [];
+    for (const edge of edges.values()) {
+      const a = original.get(edge.a), b = original.get(edge.b);
+      if (a && b) lengths.push(dist(a, b));
+    }
+    const scale = CFG.targetSpacing / Math.max(1, median(lengths));
+    const cx = [...original.values()].reduce((s, p) => s + p.x, 0) / Math.max(1, original.size);
+    const cy = [...original.values()].reduce((s, p) => s + p.y, 0) / Math.max(1, original.size);
+
+    const geo = new Map();
+    for (const [id, p] of original) {
+      const dx = (p.x - cx) * scale;
+      const dy = (p.y - cy) * scale;
+      const r = Math.hypot(dx, dy);
+      const compressed = r > 700 ? 700 + Math.sqrt(r - 700) * 13 : r;
+      const k = r > 0 ? compressed / r : 1;
+      geo.set(id, { x: dx * k, y: dy * k });
+    }
+
+    const adjacency = new Map([...geo.keys()].map(id => [id, []]));
+    for (const edge of edges.values()) {
+      if (!geo.has(edge.a) || !geo.has(edge.b)) continue;
+      adjacency.get(edge.a)?.push(edge);
+      adjacency.get(edge.b)?.push(edge);
+    }
+
+    const transferPairs = new Set();
+    for (const meta of stationMeta.values()) {
+      if (!geo.has(meta.id)) continue;
+      for (const other of meta.connections || []) if (geo.has(other) && other !== meta.id) transferPairs.add(pairKey(meta.id, other));
+    }
+
+    const groups = [...routeGroups.values()].sort((a, b) => modeOrder(a.mode) - modeOrder(b.mode) || a.label.localeCompare(b.label, undefined, { numeric: true }) || a.id.localeCompare(b.id));
+    const routeRank = new Map(groups.map((g, i) => [g.id, i]));
+    return { data, stationMeta, original, geo, adjacency, edges, routeGroups, groups, routeRank, nodeRouteGroups, routeEndpoints, transferPairs };
+  }
+
+  function octilinearPoints(a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const ax = Math.abs(dx), ay = Math.abs(dy), eps = 0.5;
+    if (ax < eps || ay < eps || Math.abs(ax - ay) < eps) return [{ ...a }, { ...b }];
+    const sx = Math.sign(dx) || 1, sy = Math.sign(dy) || 1;
+    let mid;
+    if (ax > ay) mid = { x: a.x + sx * (ax - ay), y: a.y };
+    else mid = { x: a.x, y: a.y + sy * (ay - ax) };
+    if (dist(a, mid) < eps || dist(mid, b) < eps) return [{ ...a }, { ...b }];
+    return [{ ...a }, mid, { ...b }];
+  }
+
+  function pointAlongPolyline(points, fraction) {
+    const lens = [];
+    let total = 0;
+    for (let i = 1; i < points.length; i++) { const len = dist(points[i - 1], points[i]); lens.push(len); total += len; }
+    if (total <= 0) return { ...points[0] };
+    let target = clamp(fraction, 0, 1) * total;
+    for (let i = 0; i < lens.length; i++) {
+      if (target <= lens[i] || i === lens.length - 1) {
+        const u = lens[i] > 0 ? target / lens[i] : 0;
+        return { x: points[i].x + (points[i + 1].x - points[i].x) * u, y: points[i].y + (points[i + 1].y - points[i].y) * u };
+      }
+      target -= lens[i];
+    }
+    return { ...points.at(-1) };
+  }
+
+  function simplifyCorridors(model) {
+    const pos = new Map([...model.geo].map(([id, p]) => [id, { ...p }]));
+    const anchors = new Set();
+    for (const id of pos.keys()) {
+      const degree = model.adjacency.get(id)?.length || 0;
+      const transfer = [...model.transferPairs].some(k => k.startsWith(`${id}|`) || k.endsWith(`|${id}`));
+      if (degree !== 2 || model.routeEndpoints.has(id) || transfer) anchors.add(id);
+    }
+    const visited = new Set();
+    for (const start of anchors) {
+      for (const first of model.adjacency.get(start) || []) {
+        if (visited.has(first.key)) continue;
+        const chain = [start];
+        let current = start, edge = first;
+        while (edge) {
+          visited.add(edge.key);
+          const next = edge.a === current ? edge.b : edge.a;
+          chain.push(next);
+          if (anchors.has(next) && next !== start) break;
+          const options = (model.adjacency.get(next) || []).filter(e => !visited.has(e.key));
+          if (options.length !== 1) break;
+          current = next; edge = options[0];
+        }
+        if (chain.length < 3) continue;
+        const a = pos.get(chain[0]), b = pos.get(chain.at(-1));
+        if (!a || !b) continue;
+        const spine = octilinearPoints(a, b);
+        for (let i = 1; i < chain.length - 1; i++) pos.set(chain[i], pointAlongPolyline(spine, i / (chain.length - 1)));
+      }
+    }
+
+    const byName = new Map([...model.stationMeta.values()].map(s => [norm(s.name), s.id]));
+    const names = ['Rogowska Centrum Miejskie', 'Witkowskiego', 'Rogowska/Dąbka', 'Rogowska'];
+    const ids = names.map(n => byName.get(norm(n))).filter(id => id && pos.has(id));
+    if (ids.length >= 3) {
+      const y = ids.reduce((s, id) => s + pos.get(id).y, 0) / ids.length;
+      const first = pos.get(ids[0]);
+      const rawFirst = model.geo.get(ids[0]), rawLast = model.geo.get(ids.at(-1));
+      const sign = (rawLast?.x ?? first.x) >= (rawFirst?.x ?? first.x) ? 1 : -1;
+      let cursor = first.x;
+      pos.set(ids[0], { x: cursor, y });
+      for (let i = 1; i < ids.length; i++) {
+        const prevRaw = model.geo.get(ids[i - 1]), curRaw = model.geo.get(ids[i]);
+        const step = clamp(prevRaw && curRaw ? dist(prevRaw, curRaw) : CFG.targetSpacing, CFG.targetSpacing * 0.65, CFG.targetSpacing * 1.3);
+        cursor += sign * step;
+        pos.set(ids[i], { x: cursor, y });
+      }
+    }
+    return pos;
+  }
+
+  function offsetPolyline(points, offset) {
+    if (Math.abs(offset) < 0.001 || points.length < 2) return points.map(p => ({ ...p }));
+    const normals = [];
+    for (let i = 1; i < points.length; i++) {
+      const dx = points[i].x - points[i - 1].x, dy = points[i].y - points[i - 1].y;
+      const len = Math.max(0.001, Math.hypot(dx, dy));
+      normals.push({ x: -dy / len, y: dx / len });
+    }
+    return points.map((p, i) => {
+      if (i === 0) return { x: p.x + normals[0].x * offset, y: p.y + normals[0].y * offset };
+      if (i === points.length - 1) { const n = normals.at(-1); return { x: p.x + n.x * offset, y: p.y + n.y * offset }; }
+      const n1 = normals[i - 1], n2 = normals[i];
+      let mx = n1.x + n2.x, my = n1.y + n2.y;
+      const ml = Math.hypot(mx, my);
+      if (ml < 0.001) return { x: p.x + n2.x * offset, y: p.y + n2.y * offset };
+      mx /= ml; my /= ml;
+      const dot = Math.max(0.35, mx * n2.x + my * n2.y);
+      const miter = offset / dot;
+      return { x: p.x + mx * miter, y: p.y + my * miter };
+    });
+  }
+
+  function roundedPath(points, radius = CFG.cornerRadius) {
+    if (points.length < 2) return '';
+    if (points.length === 2) return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length - 1; i++) {
+      const prev = points[i - 1], cur = points[i], next = points[i + 1];
+      const l1 = dist(prev, cur), l2 = dist(cur, next);
+      const r = Math.min(radius, l1 * 0.38, l2 * 0.38);
+      if (r < 0.5) { d += ` L ${cur.x} ${cur.y}`; continue; }
+      const u1 = { x: (cur.x - prev.x) / l1, y: (cur.y - prev.y) / l1 };
+      const u2 = { x: (next.x - cur.x) / l2, y: (next.y - cur.y) / l2 };
+      const pIn = { x: cur.x - u1.x * r, y: cur.y - u1.y * r };
+      const pOut = { x: cur.x + u2.x * r, y: cur.y + u2.y * r };
+      d += ` L ${pIn.x} ${pIn.y} Q ${cur.x} ${cur.y} ${pOut.x} ${pOut.y}`;
+    }
+    const last = points.at(-1);
+    return d + ` L ${last.x} ${last.y}`;
+  }
+
+  function edgeRouteIds(edge, model) {
+    return [...edge.routes].filter(id => state.visible.has(model.routeGroups.get(id)?.mode || 'bus')).sort((a, b) => (model.routeRank.get(a) ?? 0) - (model.routeRank.get(b) ?? 0));
+  }
+
+  function setOriginalVisible(show) {
+    const wrapper = state.wrapper;
+    if (!wrapper) return;
+    const canvas = wrapper.querySelector('canvas');
+    if (canvas) canvas.style.visibility = show ? '' : 'hidden';
+    wrapper.querySelectorAll('.label').forEach(el => el.style.visibility = show ? '' : 'hidden');
+    if (state.overlay) state.overlay.style.display = show ? 'none' : '';
+  }
+
+  function fitForPositions(positions) {
+    const vals = [...positions.values()];
+    const minX = Math.min(...vals.map(p => p.x)), maxX = Math.max(...vals.map(p => p.x));
+    const minY = Math.min(...vals.map(p => p.y)), maxY = Math.max(...vals.map(p => p.y));
+    return { x: minX - CFG.pad, y: minY - CFG.pad, w: Math.max(500, maxX - minX + CFG.pad * 2), h: Math.max(360, maxY - minY + CFG.pad * 2) };
+  }
+
+  function applyView() {
+    if (state.svg && state.view) state.svg.setAttribute('viewBox', `${state.view.x} ${state.view.y} ${state.view.w} ${state.view.h}`);
+  }
+
+  function installPanZoom(svg) {
+    svg.style.cursor = 'grab';
+    svg.style.touchAction = 'none';
+    const clearDrag = () => { state.drag = null; svg.style.cursor = 'grab'; };
+    svg.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || (e.buttons & 1) !== 1) return;
+      state.drag = { pointerId: e.pointerId, clientX: e.clientX, clientY: e.clientY, viewX: state.view.x, viewY: state.view.y };
+      try { svg.setPointerCapture(e.pointerId); } catch {}
+      svg.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+    svg.addEventListener('pointermove', e => {
+      if (!state.drag || state.drag.pointerId !== e.pointerId || (e.buttons & 1) !== 1) {
+        if (state.drag && (e.buttons & 1) !== 1) clearDrag();
+        return;
+      }
+      const rect = svg.getBoundingClientRect();
+      state.view.x = state.drag.viewX - (e.clientX - state.drag.clientX) / rect.width * state.view.w;
+      state.view.y = state.drag.viewY - (e.clientY - state.drag.clientY) / rect.height * state.view.h;
+      applyView();
+      e.preventDefault();
+    });
+    svg.addEventListener('pointerup', clearDrag);
+    svg.addEventListener('pointercancel', clearDrag);
+    svg.addEventListener('lostpointercapture', clearDrag);
+    window.addEventListener('blur', clearDrag);
+    svg.addEventListener('wheel', e => {
+      e.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      const mx = state.view.x + (e.clientX - rect.left) / rect.width * state.view.w;
+      const my = state.view.y + (e.clientY - rect.top) / rect.height * state.view.h;
+      const factor = e.deltaY > 0 ? 1.12 : 0.89;
+      state.view.x = mx + (state.view.x - mx) * factor;
+      state.view.y = my + (state.view.y - my) * factor;
+      state.view.w *= factor; state.view.h *= factor; applyView();
+    }, { passive: false });
+    svg.addEventListener('dblclick', () => { state.view = { ...state.fitView }; applyView(); });
+  }
+
+  function render() {
+    const { model, positions, wrapper } = state;
+    if (!model || !positions || !wrapper) return;
+    document.getElementById('folityn-v3-overlay')?.remove();
+    document.getElementById('folityn-v3-controls')?.remove();
+    const bg = state.dark ? '#101827' : '#f6f8fb';
+    const fg = state.dark ? '#e6edf7' : '#172033';
+    const halo = state.dark ? '#101827' : '#f6f8fb';
+    const transfer = state.dark ? '#aeb9c9' : '#455166';
+    wrapper.style.position = 'relative';
+    const overlay = document.createElement('div');
+    overlay.id = 'folityn-v3-overlay';
+    Object.assign(overlay.style, { position: 'absolute', inset: '0', zIndex: '30', background: bg, overflow: 'hidden' });
+    const svg = svgEl('svg', { width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet' });
+    svg.style.display = 'block'; overlay.appendChild(svg); wrapper.appendChild(overlay);
+    const routeLayer = svgEl('g'), transferLayer = svgEl('g'), stationLayer = svgEl('g'), labelLayer = svgEl('g');
+    svg.append(routeLayer, transferLayer, stationLayer, labelLayer);
+
+    for (const edge of model.edges.values()) {
+      const a = positions.get(edge.a), b = positions.get(edge.b);
+      if (!a || !b) continue;
+      const routeIds = edgeRouteIds(edge, model);
+      if (!routeIds.length) continue;
+      const center = octilinearPoints(a, b);
+      routeIds.forEach((routeId, index) => {
+        const group = model.routeGroups.get(routeId);
+        const offset = (index - (routeIds.length - 1) / 2) * CFG.laneGap;
+        routeLayer.appendChild(svgEl('path', { d: roundedPath(offsetPolyline(center, offset)), fill: 'none', stroke: colorHex(group?.color), 'stroke-width': CFG.lineWidth, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'vector-effect': 'non-scaling-stroke' }));
+      });
+    }
+
+    if (state.transfers) for (const key of model.transferPairs) {
+      const [aId, bId] = key.split('|');
+      const a = positions.get(aId), b = positions.get(bId);
+      if (!a || !b) continue;
+      transferLayer.appendChild(svgEl('path', { d: roundedPath(octilinearPoints(a, b), 10), fill: 'none', stroke: transfer, 'stroke-width': 2.2, 'stroke-dasharray': '7 6', 'vector-effect': 'non-scaling-stroke' }));
+    }
+
+    for (const [id, p] of positions) {
+      const visibleRoutes = [...(model.nodeRouteGroups.get(id) || [])].filter(rid => state.visible.has(model.routeGroups.get(rid)?.mode || 'bus'));
+      if (!visibleRoutes.length) continue;
+      const meta = model.stationMeta.get(id), count = visibleRoutes.length;
+      const r = 3.6 + Math.min(7.5, Math.log2(count + 1) * 2.1);
+      const major = count >= 4 || (model.adjacency.get(id)?.length || 0) >= 3;
+      const marker = major ? svgEl('rect', { x: p.x - r * 1.45, y: p.y - r, width: r * 2.9, height: r * 2, rx: r, ry: r, fill: bg, stroke: fg, 'stroke-width': 2.2, 'vector-effect': 'non-scaling-stroke' }) : svgEl('circle', { cx: p.x, cy: p.y, r, fill: bg, stroke: fg, 'stroke-width': 1.8, 'vector-effect': 'non-scaling-stroke' });
+      const title = svgEl('title'); title.textContent = `${meta?.name || id} · ${count} route${count === 1 ? '' : 's'}`; marker.appendChild(title); stationLayer.appendChild(marker);
+      const showLabel = state.labels === 'all' || (state.labels === 'key' && (major || count >= 2));
+      if (showLabel && meta?.name) {
+        const text = svgEl('text', { x: p.x + r + 5, y: p.y - r - 3, fill: fg, 'font-size': major ? 11 : 9.5, 'font-family': 'system-ui, sans-serif', 'font-weight': major ? 700 : 550, 'paint-order': 'stroke', stroke: halo, 'stroke-width': 3.8, 'stroke-linejoin': 'round', 'vector-effect': 'non-scaling-stroke' });
+        text.textContent = meta.name; labelLayer.appendChild(text);
+      }
+    }
+
+    state.overlay = overlay; state.svg = svg; state.fitView = fitForPositions(positions);
+    if (!state.view) state.view = { ...state.fitView };
+    applyView(); installPanZoom(svg); installControls(); setOriginalVisible(!state.enabled);
+  }
+
+  function button(text) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = text;
+    Object.assign(b.style, { border: '1px solid #4b5563', borderRadius: '7px', padding: '6px 8px', background: '#1f2937', color: '#fff', cursor: 'pointer', font: 'inherit' });
+    return b;
+  }
+
+  function checkbox(label, mode) {
+    const wrap = document.createElement('label'); wrap.style.cssText = 'display:flex;align-items:center;gap:6px;min-height:24px;cursor:pointer';
+    const input = document.createElement('input'); input.type = 'checkbox'; input.checked = state.visible.has(mode);
+    const text = document.createElement('span'); text.textContent = label;
+    input.onchange = () => { input.checked ? state.visible.add(mode) : state.visible.delete(mode); localStorage.setItem(KEY + 'modes', JSON.stringify([...state.visible])); render(); };
+    wrap.append(input, text); return wrap;
+  }
+
+  function installControls() {
+    const panel = document.createElement('div'); panel.id = 'folityn-v3-controls';
+    Object.assign(panel.style, { position: 'fixed', left: '14px', bottom: '14px', zIndex: '1000000', width: '282px', padding: '11px', borderRadius: '11px', background: 'rgba(17,24,39,.97)', color: '#fff', boxShadow: '0 6px 22px rgba(0,0,0,.35)', font: '600 12px/1.35 system-ui,sans-serif' });
+    const title = document.createElement('div'); title.innerHTML = '<strong style="font-size:14px">Folityn schematic v3</strong><div style="opacity:.62;font-weight:500;margin-top:2px">strict 0° / 45° / 90° geometry</div>';
+    const modes = document.createElement('div'); modes.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;margin-top:9px';
+    modes.append(checkbox('Light Rail', 'light_rail'), checkbox('Rail', 'rail'), checkbox('High Speed', 'high_speed'), checkbox('Bus / other', 'bus'));
+    const opts = document.createElement('div'); opts.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:8px';
+    const darkLabel = document.createElement('label'); darkLabel.style.cssText = 'display:flex;gap:6px;align-items:center';
+    const dark = document.createElement('input'); dark.type = 'checkbox'; dark.checked = state.dark; dark.onchange = () => { state.dark = dark.checked; localStorage.setItem(KEY + 'dark', state.dark ? '1' : '0'); render(); }; darkLabel.append(dark, document.createTextNode('Dark'));
+    const transferLabel = document.createElement('label'); transferLabel.style.cssText = 'display:flex;gap:6px;align-items:center';
+    const transfers = document.createElement('input'); transfers.type = 'checkbox'; transfers.checked = state.transfers; transfers.onchange = () => { state.transfers = transfers.checked; localStorage.setItem(KEY + 'transfers', state.transfers ? '1' : '0'); render(); }; transferLabel.append(transfers, document.createTextNode('Transfers')); opts.append(darkLabel, transferLabel);
+    const labels = document.createElement('select'); labels.innerHTML = '<option value="key">Key labels</option><option value="all">All labels</option><option value="none">No labels</option>'; labels.value = state.labels;
+    Object.assign(labels.style, { width: '100%', marginTop: '8px', padding: '6px', borderRadius: '7px', border: '1px solid #4b5563', background: '#1f2937', color: '#fff' }); labels.onchange = () => { state.labels = labels.value; localStorage.setItem(KEY + 'labels', state.labels); render(); };
+    const row = document.createElement('div'); row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 70px;gap:6px;margin-top:8px';
+    const schematic = button('Schematic'), original = button('Original'), fit = button('Fit');
+    schematic.onclick = () => { state.enabled = true; localStorage.setItem(KEY + 'enabled', '1'); setOriginalVisible(false); };
+    original.onclick = () => { state.enabled = false; localStorage.setItem(KEY + 'enabled', '0'); setOriginalVisible(true); };
+    fit.onclick = () => { state.view = { ...state.fitView }; applyView(); }; row.append(schematic, original, fit);
+    const note = document.createElement('div'); note.style.cssText = 'opacity:.58;font-weight:500;font-size:10.5px;margin-top:7px'; note.textContent = 'Drag only while holding left mouse · wheel zoom · double-click fit · opposite directions are merged';
+    panel.append(title, modes, opts, labels, row, note); document.body.appendChild(panel);
+  }
+
+  async function main() {
+    try {
+      document.getElementById('mtr-schematic-overlay')?.remove(); document.getElementById('mtr-schematic-controls')?.remove();
+      const [{ wrapper, canvas }, data] = await Promise.all([waitForMap(), loadNetwork()]);
+      state.wrapper = wrapper; state.canvas = canvas; state.model = buildModel(data); state.positions = simplifyCorridors(state.model); render();
+      console.log('[MTR Map Tools] Folityn schematic v3 loaded', { publicRoutes: state.model.groups.length, physicalEdges: state.model.edges.size, stations: state.positions.size, modes: [...new Set(state.model.groups.map(r => r.mode))] });
+    } catch (error) { console.error('[MTR Map Tools] Folityn schematic v3 failed:', error); }
+  }
+
+  main();
 })();
