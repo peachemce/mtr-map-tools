@@ -1,0 +1,5461 @@
+{
+  "format": "mtr-map-tools-network",
+  "formatVersion": 1,
+  "exportedAt": "2026-09-22T15:15:30.695Z",
+  "source": "http://localhost:8888/mtr/api/map/stations-and-routes?dimension=0",
+  "stations": [
+    {
+      "id": "96D91A7C4D0CB801",
+      "name": "Powstania Folityńskiego",
+      "color": 12108619,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "1DCF4840F4211803",
+      "name": "Chwastowa",
+      "color": 15852382,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "0021107D8DCA2504",
+      "name": "Lipków Ujście",
+      "color": 13012240,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "1E976BE601CC9108",
+      "name": "Zmierzch",
+      "color": 4150427,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "86C226504ADF7D09",
+      "name": "Os. Wirenka",
+      "color": 4819247,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "06E0DE073F21F20D",
+      "name": "Tajgowa",
+      "color": 1406452,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "40F735F7A9BE610E",
+      "name": "Straszkiewicza",
+      "color": 2878742,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "89A845AE98BEF10E",
+      "name": "Folityn Centralny",
+      "color": 2438330,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "B259AEFFD8B6FA72",
+        "4B51B036FEBDEE8D"
+      ]
+    },
+    {
+      "id": "429C96E0B6B89A0F",
+      "name": "Rondo Niepodległości",
+      "color": 6102403,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "17513A02B76B2D10",
+      "name": "Niepodległości/Chrobrego",
+      "color": 6723472,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "9411098EA450AB11",
+      "name": "WOS Boisko",
+      "color": 12389161,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "2184D875F44E9B12",
+      "name": "Polany/Północna",
+      "color": 8321666,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "B712FDCEFF90D313",
+      "name": "Stalowa",
+      "color": 7242118,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "D25E5F641A908C16",
+      "name": "Kraszewo/Kubickiej",
+      "color": 1793070,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "4E292EC203D6B317",
+      "name": "Lipków Wschód",
+      "color": 14199068,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "7952217BF1F48B17",
+      "name": "Kanadyjska",
+      "color": 6479538,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "8A7228C1D88C0918",
+      "name": "Folityn Zachód",
+      "color": 2438330,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "0A3FEA32740F5219",
+      "name": "Lipków/Zajączewo",
+      "color": 8552701,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "0A6B8713F65A4919",
+      "name": "Rondo Nettspenda",
+      "color": 4659359,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "202AC0BDBD7E2C19",
+      "name": "Araszkiewicza",
+      "color": 1383126,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "582240E8A331571B",
+      "name": "Rakoniewicka II",
+      "color": 1722506,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "D579CCB2B54B0A1B",
+      "name": "Szwedzka Stadion",
+      "color": 3693184,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "DA6AAA6FC362C21B",
+      "name": "Blask",
+      "color": 242482,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "624FF6C35107F31D",
+      "name": "Brama Południowa",
+      "color": 10783756,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "7C3FF898E021571D",
+      "name": "Cukrowa",
+      "color": 7507822,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "0045D4FC88458023",
+      "name": "Folityn Drzewnia",
+      "color": 3632612,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "CFD4825DA3543423",
+      "name": "Szczecinki",
+      "color": 6444822,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "3CE61805B6AFCD25",
+      "name": "Urząd Imigracji",
+      "color": 3634548,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "6F672E3D1720B426",
+      "name": "Rogowska Centrum Miejskie",
+      "color": 11731809,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "B8A2D87356F099F6"
+      ]
+    },
+    {
+      "id": "CEB7D39DE664C52A",
+      "name": "Staniechowska",
+      "color": 5477952,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "BA59237A35CC6898",
+        "367392F540CCF92C"
+      ]
+    },
+    {
+      "id": "0753F30822AF922B",
+      "name": "Lipków/Os.Lipowe",
+      "color": 13538083,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "0FDA1F1B30DC892B",
+      "name": "Wity PKM",
+      "color": 7554179,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "297954AE4FBA8F98"
+      ]
+    },
+    {
+      "id": "A810032E61955A2B",
+      "name": "Wiadukt Torowy",
+      "color": 2790016,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "B8A2D87356F099F6",
+        "B259AEFFD8B6FA72",
+        "8F4A4B6FF3ACC73B"
+      ]
+    },
+    {
+      "id": "367392F540CCF92C",
+      "name": "Staniechowska Kładka",
+      "color": 3260659,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "BA59237A35CC6898",
+        "CEB7D39DE664C52A"
+      ]
+    },
+    {
+      "id": "45DFED4BF4FD3B2E",
+      "name": "Ognista III",
+      "color": 13032311,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "65D2BE7E9A6B9F2E",
+      "name": "Niepodległości/Staniechowska Trąbka",
+      "color": 4756608,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "798AE6C7ADC12C2E",
+      "name": "Wypycha",
+      "color": 4705201,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "5B49F473AA7A272F",
+      "name": "Łęczyca Nowa",
+      "color": 2651183,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "E6ABA824CB91F032",
+      "name": "Os. Drzewnia",
+      "color": 4428855,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "FE2C8F860C7EC732",
+      "name": "Rogowska",
+      "color": 1548925,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "B594E263BA455933",
+      "name": "Wielowice Mniejsze Korytarz",
+      "color": 9596266,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "48B68661D1EAB335",
+      "name": "Kurzowa",
+      "color": 6523692,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "BCAA3E98F4609B36",
+      "name": "Lisiak",
+      "color": 7090264,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "8F4A4B6FF3ACC73B",
+      "name": "Rondo Larcho",
+      "color": 11056683,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "B8A2D87356F099F6",
+        "B259AEFFD8B6FA72",
+        "A810032E61955A2B"
+      ]
+    },
+    {
+      "id": "CAEF3B691A526E3B",
+      "name": "Folityn Rogowska",
+      "color": 4040234,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "2B69734709A07D3C",
+      "name": "FLN Bank",
+      "color": 7843373,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "2DF49E1E61F1343D",
+      "name": "Lipków Przełęcz",
+      "color": 14199068,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "4EB235D343A90C41",
+      "name": "Folityn Przebienice Lotnisko",
+      "color": 1942385,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "F5DCCB08AB815641",
+      "name": "Wzgórzyn PKM",
+      "color": 6340229,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "76393D9D2DBB2981"
+      ]
+    },
+    {
+      "id": "8AE732E6EEEEF144",
+      "name": "Drzewiec PKM",
+      "color": 3572840,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "00250C349D7F0DA2"
+      ]
+    },
+    {
+      "id": "5B89281A50676D47",
+      "name": "Brama Zachodnia",
+      "color": 4299581,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "A15AB4B46FEC5CA7"
+      ]
+    },
+    {
+      "id": "5F47E6CB5BF3F449",
+      "name": "Stawy",
+      "color": 6493996,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "6DFC7CA11871074A",
+      "name": "Polany/Szkolna",
+      "color": 13247240,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "9B25E84A078B6F4A",
+      "name": "Lipowa",
+      "color": 14687654,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "10EE61CCACF3A74B",
+      "name": "Polany/Kolejowa",
+      "color": 11594894,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "53E9284280586F4C",
+      "name": "Dębowa",
+      "color": 1223928,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "997DCE67C5A22B4D",
+      "name": "Os. Astronautów",
+      "color": 4826035,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "564174E74993E350",
+      "name": "Cmentarzowa",
+      "color": 1635708,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "803942E115B70C50",
+      "name": "Jamnikowsko PKM",
+      "color": 10279942,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "BE876CAAF18515F3"
+      ]
+    },
+    {
+      "id": "D388C13D597BEF51",
+      "name": "Ostrówka",
+      "color": 14981161,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "4CAA65862B77FD59",
+      "name": "Jamnikowsko",
+      "color": 7499371,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "8F2F1371373A6F5A",
+      "name": "Wielowice Mniejsze",
+      "color": 11872309,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "462237079916945D",
+      "name": "Orzechowa",
+      "color": 2785912,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "5EF050DD9EE50B5D",
+      "name": "Laskowskiego Wiadukt",
+      "color": 5653021,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "73DB3BBE622B885E",
+      "name": "Maniaka",
+      "color": 4360836,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "2BCCB1366F803463",
+      "name": "Słonecznikowa",
+      "color": 2767975,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "318BBB59DF4E4F63",
+      "name": "Lipków/Obornicka",
+      "color": 12492337,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "B93D21B74F548A70",
+      "name": "Polany/Ukryta",
+      "color": 3086381,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "B259AEFFD8B6FA72",
+      "name": "Folityn Centralny",
+      "color": 2438330,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "B8A2D87356F099F6",
+        "89A845AE98BEF10E",
+        "8F4A4B6FF3ACC73B",
+        "A810032E61955A2B"
+      ]
+    },
+    {
+      "id": "1E2C5F95E1172074",
+      "name": "Rodowa",
+      "color": 10582552,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "C7BBCB1916E27575",
+      "name": "Austrowęgierska",
+      "color": 12766962,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "834D5EA9B9302376",
+      "name": "Polany/Kurza",
+      "color": 6152350,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "311A7444A854E477",
+      "name": "Lepianki",
+      "color": 6263072,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "794AE6BD7F6C2279",
+      "name": "Laskowskiego",
+      "color": 73210,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "986AB04F4A006079",
+      "name": "Kraszewo A3",
+      "color": 15095820,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "8AF03789812B7C7A",
+      "name": "Dębowo",
+      "color": 13057090,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "2351B5C2E1DEF27B",
+      "name": "Wity Dolne",
+      "color": 8885667,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "FBEE469BA838427B",
+      "name": "Ognista",
+      "color": 3380732,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "6AFE8F66AB4D167C",
+      "name": "Lipków/Ujście CH",
+      "color": 12504582,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "F0FD6FC1DF20AC7D",
+      "name": "Grabinowo",
+      "color": 14869294,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "926FF3F78A53167E",
+      "name": "Lipków Towarowy",
+      "color": 14199068,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "B51B259CF2A0127E",
+      "name": "Korzeniewskiego",
+      "color": 1329805,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "2DD265AD01D29D80",
+      "name": "Brzozowo",
+      "color": 14604074,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "76393D9D2DBB2981",
+      "name": "Folityn Wzgórzyn",
+      "color": 3632612,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "F5DCCB08AB815641"
+      ]
+    },
+    {
+      "id": "B559D32F0C685582",
+      "name": "WOS",
+      "color": 2899620,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "EDB5648FAB804287",
+      "name": "Grabinowska",
+      "color": 2519539,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "F2B1AADCCD630189",
+      "name": "Beskidzka",
+      "color": 4381317,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "F2FAFDDF0BE8B789",
+      "name": "Astrolitowska",
+      "color": 15463092,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "41F666335FF24A8B",
+      "name": "Droga Śmierci",
+      "color": 2966969,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "4B51B036FEBDEE8D",
+      "name": "Teatr Miejski",
+      "color": 5187548,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "89A845AE98BEF10E"
+      ]
+    },
+    {
+      "id": "936AC465629A318D",
+      "name": "Rosowo Lipkowskie",
+      "color": 13736496,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "F6D2753923F5D98D",
+      "name": "Wilhelma",
+      "color": 11840578,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "A9A2969D7FC8898E",
+      "name": "Folityn Lewobrzeże",
+      "color": 4696565,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "375F010B483A9E8F",
+      "name": "Międzymiejska",
+      "color": 15057679,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "3E3BB1288460AB91",
+      "name": "Polany/Szkoła nr.1",
+      "color": 7212329,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "1EE2882F9719BF92",
+      "name": "Mostowa",
+      "color": 2919223,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "34F9D6FC18F27893",
+      "name": "Folityn Polany",
+      "color": 9555455,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "E7948D8C948D6296",
+      "name": "Dąbrowo Folityńskie",
+      "color": 14070810,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "10147DBE48FB0898",
+      "name": "Charlińska",
+      "color": 4265968,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "297954AE4FBA8F98",
+      "name": "Folityn Wity",
+      "color": 3632612,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "0FDA1F1B30DC892B"
+      ]
+    },
+    {
+      "id": "BA59237A35CC6898",
+      "name": "Folityn Staniechowska",
+      "color": 3632612,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "367392F540CCF92C",
+        "CEB7D39DE664C52A"
+      ]
+    },
+    {
+      "id": "79975AA6091F019B",
+      "name": "Kronica",
+      "color": 2127060,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "166D66944C8E349C",
+      "name": "Końcowa",
+      "color": 8922188,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "EF93099D8FA8EE9E",
+      "name": "Chorwacka",
+      "color": 12233219,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "4B43818A1376929F",
+      "name": "Grochowa",
+      "color": 3523584,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "040CA6CD06B896A0",
+      "name": "Muzea",
+      "color": 3455813,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "00250C349D7F0DA2",
+      "name": "Folityn Drzewiec",
+      "color": 3632612,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "8AE732E6EEEEF144"
+      ]
+    },
+    {
+      "id": "702253D21E865CA4",
+      "name": "Polany/Rynek",
+      "color": 5622538,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "2C3E2B8E7CEE9DA6",
+      "name": "Krystonia",
+      "color": 14692739,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "48FB32622C692EA6",
+      "name": "Rogowska/Dąbka",
+      "color": 7933549,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "A15AB4B46FEC5CA7",
+      "name": "Rondo Rameksi",
+      "color": 13006848,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "5B89281A50676D47"
+      ]
+    },
+    {
+      "id": "E0DC4106F549B7A7",
+      "name": "Rakoniew",
+      "color": 16428301,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "49FCC5DDC23D12A8",
+      "name": "Lipków Brama N.E",
+      "color": 14260236,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "1EDB81601A5E62A9",
+      "name": "Poranna",
+      "color": 12216672,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "895D98C58493A7AA",
+      "name": "Wielowicka",
+      "color": 1724147,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "95169A54CC6CE6AA",
+      "name": "Strzeleckiego",
+      "color": 4289391,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "E206402884DBFCAA",
+      "name": "Łęczyca Przedmieście",
+      "color": 3643721,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "F94E31699E3308AB",
+      "name": "Folityn Lipków",
+      "color": 9555455,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "4F61C8CF4B853BB1",
+      "name": "Sucha Folityńska",
+      "color": 13493829,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "6B86817D9842C2B2",
+      "name": "Ząbowice",
+      "color": 11405843,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "D8B4C0A9157BA2B4",
+      "name": "Europejska",
+      "color": 6129602,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "3BEB36A5B26AE0B5",
+      "name": "Strzykowo",
+      "color": 11257888,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "F3C69B9324FA1EB8",
+      "name": "Lipków/A1",
+      "color": 16748303,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "47E08DF2477812BA",
+      "name": "Kraszewska",
+      "color": 7847447,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "FBF0FC8F6940DEBF",
+      "name": "Łęczyca Stara",
+      "color": 3592570,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "D1E1E3F4437393C0",
+      "name": "Zakręt",
+      "color": 9746371,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "FA56752B2F20C5C0",
+      "name": "Os. Morskie",
+      "color": 16650642,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "9E1858C9058E38C6",
+      "name": "Budziszewska",
+      "color": 4910773,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "AC3ECE72D9AF0EC9",
+      "name": "Rondo Brzozowo",
+      "color": 2246741,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "AE3F1F07393D1BCF",
+      "name": "Soperka",
+      "color": 2848349,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "5670661627FE59D0",
+      "name": "Folityn Folisfera",
+      "color": 9555455,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "534E2E494C0D37D2",
+      "name": "Orzechowa II",
+      "color": 2593677,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "99D3ABB615EF81D3",
+      "name": "Katedra",
+      "color": 14324538,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "9644E7933853E8D7",
+      "name": "Brzozowska",
+      "color": 8514335,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "C0B87E11AB4A27D7",
+      "name": "Os. Soperka",
+      "color": 16681013,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "27625018FA1A76D8",
+      "name": "Rondo Moryta-Niejawskiego",
+      "color": 1554822,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "6B3DD0ADDCCD5DD9",
+      "name": "Polany/Straż Pożarna",
+      "color": 15462658,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "BC386C248E1023DA",
+      "name": "Kraszewo/Racinowskiej",
+      "color": 370685,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "91798850736DB6DB",
+      "name": "Śramowo",
+      "color": 2203963,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "A7398FDCB50C0BDB",
+      "name": "Owocna",
+      "color": 12062917,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "B715949B55CA80DE",
+      "name": "Meszelowska",
+      "color": 5314794,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "B94EE0376E88AADE",
+      "name": "Plac 31 Lipca",
+      "color": 2399116,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "2F52FA018E74EBE0",
+      "name": "Kordena",
+      "color": 413256,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "01F369328A6B32E3",
+      "name": "Folityn Airport West",
+      "color": 4696565,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "BBE621EB575C1AEC",
+      "name": "Mangowa",
+      "color": 11149068,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "62772A81FDB4C4EE",
+      "name": "Witkowskiego",
+      "color": 1795513,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "6FB392597EE632EF",
+      "name": "Kobylskiego",
+      "color": 15817485,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    },
+    {
+      "id": "BE876CAAF18515F3",
+      "name": "Folityn Jamnikowsko",
+      "color": 4696565,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "803942E115B70C50"
+      ]
+    },
+    {
+      "id": "B8A2D87356F099F6",
+      "name": "Folityn Centralny",
+      "color": 2438330,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": [
+        "B259AEFFD8B6FA72",
+        "6F672E3D1720B426",
+        "8F4A4B6FF3ACC73B",
+        "A810032E61955A2B"
+      ]
+    },
+    {
+      "id": "ECA87DD81062BCF7",
+      "name": "Rakoniewicka",
+      "color": 14256221,
+      "zone1": 0,
+      "zone2": 0,
+      "zone3": 0,
+      "connections": []
+    }
+  ],
+  "routes": [
+    {
+      "id": "D170B366E57EE907",
+      "name": "KF NE 2",
+      "color": 16564538,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "E0DC4106F549B7A7",
+          "x": 6272,
+          "y": -1,
+          "z": -3859,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "936AC465629A318D",
+          "x": 5461,
+          "y": -1,
+          "z": -3814,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D388C13D597BEF51",
+          "x": 4441,
+          "y": -1,
+          "z": -2877,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4E292EC203D6B317",
+          "x": 1815,
+          "y": 0,
+          "z": -4217,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F94E31699E3308AB",
+          "x": 255,
+          "y": 13,
+          "z": -3574,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "00250C349D7F0DA2",
+          "x": 60,
+          "y": 13,
+          "z": -2420,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "89A845AE98BEF10E",
+          "x": -130,
+          "y": 5,
+          "z": -649,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        39545,
+        67364,
+        145457,
+        125531,
+        43905,
+        60415
+      ],
+      "depots": [
+        "Rakoniew"
+      ]
+    },
+    {
+      "id": "FD3EFD4FD29C2D08",
+      "name": "ŁC Regio 1",
+      "color": 14567455,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "79975AA6091F019B",
+          "x": 10806,
+          "y": -2,
+          "z": 258,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "E7948D8C948D6296",
+          "x": 10458,
+          "y": -2,
+          "z": -126,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "5B49F473AA7A272F",
+          "x": 10482,
+          "y": -2,
+          "z": -871,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "FBF0FC8F6940DEBF",
+          "x": 10620,
+          "y": -2,
+          "z": -1107,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [],
+      "depots": [
+        "Kronica"
+      ]
+    },
+    {
+      "id": "4B65DF5A50F3CC09",
+      "name": "ŁC Regio 2",
+      "color": 14567455,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "FBF0FC8F6940DEBF",
+          "x": 10616,
+          "y": -2,
+          "z": -1107,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "5B49F473AA7A272F",
+          "x": 10460,
+          "y": -2,
+          "z": -861,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "E7948D8C948D6296",
+          "x": 10455,
+          "y": -2,
+          "z": -125,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "79975AA6091F019B",
+          "x": 10804,
+          "y": -2,
+          "z": 260,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [],
+      "depots": [
+        "Łęczyca Stara"
+      ]
+    },
+    {
+      "id": "7598513EC09F790C",
+      "name": "142",
+      "color": 7773741,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "86C226504ADF7D09",
+          "x": -562,
+          "y": -2,
+          "z": 1864,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "429C96E0B6B89A0F",
+          "x": -671,
+          "y": -2,
+          "z": 1777,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "EF93099D8FA8EE9E",
+          "x": -885,
+          "y": -2,
+          "z": 1777,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "BCAA3E98F4609B36",
+          "x": -932,
+          "y": -2,
+          "z": 1604,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B715949B55CA80DE",
+          "x": -932,
+          "y": -2,
+          "z": 1380,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0FDA1F1B30DC892B",
+          "x": -915,
+          "y": -2,
+          "z": 966,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        12868,
+        14075,
+        13755,
+        14171,
+        25337,
+        79554
+      ],
+      "depots": [
+        "Os. Wirenka"
+      ]
+    },
+    {
+      "id": "1B24B2D1EFEEA019",
+      "name": "IC E2",
+      "color": 3303833,
+      "number": "",
+      "type": "train_high_speed",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "5B49F473AA7A272F",
+          "x": 10300,
+          "y": -2,
+          "z": -697,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6B86817D9842C2B2",
+          "x": 8029,
+          "y": -2,
+          "z": -158,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "CFD4825DA3543423",
+          "x": 4511,
+          "y": -2,
+          "z": 179,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "89A845AE98BEF10E",
+          "x": -130,
+          "y": 5,
+          "z": -649,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [],
+      "depots": [
+        "Łęczyca Nowa"
+      ]
+    },
+    {
+      "id": "93EF08C0475B2A1A",
+      "name": "Untitled",
+      "color": 6350004,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [],
+      "durations": [],
+      "depots": []
+    },
+    {
+      "id": "347FB70945B68A22",
+      "name": "716",
+      "color": 14713625,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "BC386C248E1023DA",
+          "x": 4082,
+          "y": -2,
+          "z": -1812,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D25E5F641A908C16",
+          "x": 4066,
+          "y": -2,
+          "z": -1691,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6DFC7CA11871074A",
+          "x": 3849,
+          "y": -2,
+          "z": -962,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "3E3BB1288460AB91",
+          "x": 3617,
+          "y": -2,
+          "z": -687,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "10EE61CCACF3A74B",
+          "x": 3406,
+          "y": -2,
+          "z": -581,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6B3DD0ADDCCD5DD9",
+          "x": 3170,
+          "y": -2,
+          "z": -456,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "702253D21E865CA4",
+          "x": 2988,
+          "y": -2,
+          "z": -415,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B93D21B74F548A70",
+          "x": 2764,
+          "y": -2,
+          "z": -417,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2184D875F44E9B12",
+          "x": 2651,
+          "y": -2,
+          "z": -415,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "834D5EA9B9302376",
+          "x": 2478,
+          "y": -2,
+          "z": -415,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "803942E115B70C50",
+          "x": 2298,
+          "y": -2,
+          "z": -285,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4CAA65862B77FD59",
+          "x": 1988,
+          "y": -2,
+          "z": -188,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        11626,
+        35262,
+        19284,
+        14190,
+        85641,
+        146229,
+        13500,
+        9688,
+        11728,
+        15702,
+        34388
+      ],
+      "depots": [
+        "Kacza"
+      ]
+    },
+    {
+      "id": "FE456BA9AEB4332D",
+      "name": "180",
+      "color": 3301749,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "F5DCCB08AB815641",
+          "x": 1241,
+          "y": 0,
+          "z": -1262,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F2FAFDDF0BE8B789",
+          "x": 1408,
+          "y": 2,
+          "z": -1446,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "166D66944C8E349C",
+          "x": 1618,
+          "y": 13,
+          "z": -1483,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "5F47E6CB5BF3F449",
+          "x": 1889,
+          "y": -2,
+          "z": -1479,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "91798850736DB6DB",
+          "x": 2366,
+          "y": -2,
+          "z": -1605,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "7952217BF1F48B17",
+          "x": 2375,
+          "y": -2,
+          "z": -1452,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "794AE6BD7F6C2279",
+          "x": 2375,
+          "y": -2,
+          "z": -1298,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "48B68661D1EAB335",
+          "x": 2403,
+          "y": -2,
+          "z": -1149,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        35681,
+        13989,
+        17277,
+        28170,
+        11400,
+        10840,
+        12648
+      ],
+      "depots": [
+        "Kacza"
+      ]
+    },
+    {
+      "id": "3CBCCCFD819CB834",
+      "name": "612",
+      "color": 12676390,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "0A3FEA32740F5219",
+          "x": 1155,
+          "y": 2,
+          "z": -3687,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6AFE8F66AB4D167C",
+          "x": 1163,
+          "y": 2,
+          "z": -3506,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0753F30822AF922B",
+          "x": 1134,
+          "y": 2,
+          "z": -3171,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "318BBB59DF4E4F63",
+          "x": 1037,
+          "y": 2,
+          "z": -3074,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F3C69B9324FA1EB8",
+          "x": 918,
+          "y": 2,
+          "z": -2955,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2DD265AD01D29D80",
+          "x": 781,
+          "y": 2,
+          "z": -2748,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "06E0DE073F21F20D",
+          "x": 1038,
+          "y": 2,
+          "z": -2492,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "53E9284280586F4C",
+          "x": 1163,
+          "y": 2,
+          "z": -2232,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "AC3ECE72D9AF0EC9",
+          "x": 1189,
+          "y": 2,
+          "z": -2080,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "41F666335FF24A8B",
+          "x": 1281,
+          "y": 2,
+          "z": -1996,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "96D91A7C4D0CB801",
+          "x": 1424,
+          "y": 2,
+          "z": -1846,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "EDB5648FAB804287",
+          "x": 1569,
+          "y": 2,
+          "z": -1701,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "166D66944C8E349C",
+          "x": 1595,
+          "y": 12,
+          "z": -1539,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F2FAFDDF0BE8B789",
+          "x": 1383,
+          "y": 2,
+          "z": -1467,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F5DCCB08AB815641",
+          "x": 1245,
+          "y": 0,
+          "z": -1241,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        15397,
+        20164,
+        10458,
+        11475,
+        97875,
+        20201,
+        18146,
+        12156,
+        148687,
+        418283,
+        13205,
+        12308,
+        14969,
+        33402,
+        259283
+      ],
+      "depots": [
+        "Drzewiec PKM",
+        "Kacza"
+      ]
+    },
+    {
+      "id": "271DADAAAFC70335",
+      "name": "KF SW 1",
+      "color": 10890430,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "B259AEFFD8B6FA72",
+          "x": -90,
+          "y": -2,
+          "z": -242,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "BA59237A35CC6898",
+          "x": 682,
+          "y": 0,
+          "z": 1323,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "01F369328A6B32E3",
+          "x": 1434,
+          "y": 0,
+          "z": 1493,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        67278,
+        31680,
+        92675
+      ],
+      "depots": [
+        "Folityn Centralny Main"
+      ]
+    },
+    {
+      "id": "38CFA2C1AFCB5645",
+      "name": "ŁC Regio 4",
+      "color": 13842715,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "3BEB36A5B26AE0B5",
+          "x": 9236,
+          "y": -2,
+          "z": -1893,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "E206402884DBFCAA",
+          "x": 9825,
+          "y": -2,
+          "z": -1304,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "FBF0FC8F6940DEBF",
+          "x": 10620,
+          "y": -2,
+          "z": -1107,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [],
+      "depots": [
+        "Strzykowo"
+      ]
+    },
+    {
+      "id": "B6488E690EF30A48",
+      "name": "142",
+      "color": 7773741,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "0FDA1F1B30DC892B",
+          "x": -915,
+          "y": -2,
+          "z": 966,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B715949B55CA80DE",
+          "x": -938,
+          "y": -2,
+          "z": 1380,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "BCAA3E98F4609B36",
+          "x": -938,
+          "y": -2,
+          "z": 1605,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "EF93099D8FA8EE9E",
+          "x": -901,
+          "y": -2,
+          "z": 1797,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "429C96E0B6B89A0F",
+          "x": -669,
+          "y": -2,
+          "z": 1797,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "86C226504ADF7D09",
+          "x": -540,
+          "y": -2,
+          "z": 1895,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        26396,
+        14396,
+        14187,
+        14866,
+        13965
+      ],
+      "depots": [
+        "Wity PKM"
+      ]
+    },
+    {
+      "id": "900363510FFA7C49",
+      "name": "102",
+      "color": 2780980,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "8AE732E6EEEEF144",
+          "x": 24,
+          "y": 7,
+          "z": -2350,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "534E2E494C0D37D2",
+          "x": -327,
+          "y": 7,
+          "z": -2427,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "462237079916945D",
+          "x": -526,
+          "y": 7,
+          "z": -2459,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "E6ABA824CB91F032",
+          "x": -530,
+          "y": 7,
+          "z": -2919,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        21061,
+        13522,
+        21032,
+        5798
+      ],
+      "depots": [
+        "Drzewiec PKM",
+        "Kacza"
+      ]
+    },
+    {
+      "id": "A3DF4C9275624B50",
+      "name": "KF SW 2",
+      "color": 10890430,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "01F369328A6B32E3",
+          "x": 1436,
+          "y": 0,
+          "z": 1491,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "BA59237A35CC6898",
+          "x": 684,
+          "y": 0,
+          "z": 1321,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B259AEFFD8B6FA72",
+          "x": -84,
+          "y": -2,
+          "z": -241,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        34488,
+        65073,
+        66045
+      ],
+      "depots": [
+        "Folityn Centralny Main"
+      ]
+    },
+    {
+      "id": "FC22F71236962859",
+      "name": "IC NE 2",
+      "color": 3303833,
+      "number": "",
+      "type": "train_high_speed",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "5B49F473AA7A272F",
+          "x": 10300,
+          "y": -2,
+          "z": -697,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6B86817D9842C2B2",
+          "x": 8029,
+          "y": -2,
+          "z": -158,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "CFD4825DA3543423",
+          "x": 4571,
+          "y": -2,
+          "z": 226,
+          "name": "3",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D388C13D597BEF51",
+          "x": 4448,
+          "y": -1,
+          "z": -2872,
+          "name": "4",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4E292EC203D6B317",
+          "x": 1815,
+          "y": 0,
+          "z": -4217,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2DF49E1E61F1343D",
+          "x": 355,
+          "y": 7,
+          "z": -5090,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [],
+      "depots": [
+        "Łęczyca Nowa"
+      ]
+    },
+    {
+      "id": "183A978341D81F5E",
+      "name": "182",
+      "color": 2727507,
+      "number": "1",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "C0B87E11AB4A27D7",
+          "x": 1643,
+          "y": -2,
+          "z": -479,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "FBEE469BA838427B",
+          "x": 1403,
+          "y": -2,
+          "z": -450,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D8B4C0A9157BA2B4",
+          "x": 1333,
+          "y": -2,
+          "z": -232,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D579CCB2B54B0A1B",
+          "x": 1333,
+          "y": -2,
+          "z": -43,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "AE3F1F07393D1BCF",
+          "x": 1333,
+          "y": -2,
+          "z": 336,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "10147DBE48FB0898",
+          "x": 1333,
+          "y": -2,
+          "z": 510,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "FE2C8F860C7EC732",
+          "x": 974,
+          "y": -2,
+          "z": 555,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "1DCF4840F4211803",
+          "x": 974,
+          "y": -2,
+          "z": 774,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "040CA6CD06B896A0",
+          "x": 885,
+          "y": -2,
+          "z": 940,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "1E2C5F95E1172074",
+          "x": 645,
+          "y": -2,
+          "z": 940,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "CEB7D39DE664C52A",
+          "x": 484,
+          "y": -6,
+          "z": 1130,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "367392F540CCF92C",
+          "x": 484,
+          "y": -6,
+          "z": 1371,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "65D2BE7E9A6B9F2E",
+          "x": 414,
+          "y": -2,
+          "z": 1777,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "997DCE67C5A22B4D",
+          "x": 114,
+          "y": -2,
+          "z": 1777,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "17513A02B76B2D10",
+          "x": -140,
+          "y": -2,
+          "z": 1777,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B712FDCEFF90D313",
+          "x": -522,
+          "y": -2,
+          "z": 1777,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "86C226504ADF7D09",
+          "x": -540,
+          "y": -2,
+          "z": 1895,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        16406,
+        16748,
+        12589,
+        21145,
+        12016,
+        22019,
+        14175,
+        19687,
+        15790,
+        21702,
+        14977,
+        25554,
+        17497,
+        15927,
+        21239,
+        12815,
+        220704
+      ],
+      "depots": [
+        "Os. Soperka",
+        "Kacza"
+      ]
+    },
+    {
+      "id": "94DB116DFD711861",
+      "name": "KF N 1",
+      "color": 15756842,
+      "number": "1",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "89A845AE98BEF10E",
+          "x": -126,
+          "y": 5,
+          "z": -652,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "00250C349D7F0DA2",
+          "x": 69,
+          "y": 13,
+          "z": -2419,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F94E31699E3308AB",
+          "x": 260,
+          "y": 13,
+          "z": -3574,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2DF49E1E61F1343D",
+          "x": 355,
+          "y": 7,
+          "z": -5090,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        63720,
+        43934,
+        71921
+      ],
+      "depots": [
+        "FDKW"
+      ]
+    },
+    {
+      "id": "7014061846CCCF68",
+      "name": "102",
+      "color": 2780980,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "E6ABA824CB91F032",
+          "x": -536,
+          "y": 7,
+          "z": -2937,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "462237079916945D",
+          "x": -536,
+          "y": 7,
+          "z": -2483,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "534E2E494C0D37D2",
+          "x": -327,
+          "y": 7,
+          "z": -2421,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "8AE732E6EEEEF144",
+          "x": -51,
+          "y": 7,
+          "z": -2322,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        20687,
+        14992,
+        16559,
+        169138
+      ],
+      "depots": [
+        "Os. Drzewnia",
+        "Kacza"
+      ]
+    },
+    {
+      "id": "F0A9804BD2ABD76C",
+      "name": "IC E1",
+      "color": 3303833,
+      "number": "",
+      "type": "train_high_speed",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "89A845AE98BEF10E",
+          "x": -135,
+          "y": 5,
+          "z": -649,
+          "name": "3",
+          "dwellTime": 10000
+        },
+        {
+          "id": "CFD4825DA3543423",
+          "x": 4560,
+          "y": -2,
+          "z": 234,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6B86817D9842C2B2",
+          "x": 8029,
+          "y": -2,
+          "z": -155,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "5B49F473AA7A272F",
+          "x": 10303,
+          "y": -2,
+          "z": -696,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        205130,
+        127424,
+        84264,
+        403883
+      ],
+      "depots": [
+        "FDKW"
+      ]
+    },
+    {
+      "id": "B9E674A12C678B7E",
+      "name": "IC NE 1",
+      "color": 3303833,
+      "number": "",
+      "type": "train_high_speed",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "4E292EC203D6B317",
+          "x": 1816,
+          "y": 0,
+          "z": -4212,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D388C13D597BEF51",
+          "x": 4450,
+          "y": -1,
+          "z": -2870,
+          "name": "3",
+          "dwellTime": 10000
+        },
+        {
+          "id": "CFD4825DA3543423",
+          "x": 4569,
+          "y": -2,
+          "z": 228,
+          "name": "4",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6B86817D9842C2B2",
+          "x": 8029,
+          "y": -2,
+          "z": -155,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "5B49F473AA7A272F",
+          "x": 10303,
+          "y": -2,
+          "z": -696,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [],
+      "depots": [
+        "Kraszewo-Lipków Północ"
+      ]
+    },
+    {
+      "id": "1E1615EBFED81087",
+      "name": "KF CNT SOUTH 2",
+      "color": 2961230,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "297954AE4FBA8F98",
+          "x": -1002,
+          "y": 5,
+          "z": 943,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B259AEFFD8B6FA72",
+          "x": -84,
+          "y": -2,
+          "z": -241,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        66047
+      ],
+      "depots": [
+        "Folityn Centralny Main"
+      ]
+    },
+    {
+      "id": "8917366EDB5F738F",
+      "name": "612",
+      "color": 12676390,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "F5DCCB08AB815641",
+          "x": 1235,
+          "y": 0,
+          "z": -1269,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F2FAFDDF0BE8B789",
+          "x": 1408,
+          "y": 2,
+          "z": -1446,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "166D66944C8E349C",
+          "x": 1611,
+          "y": 14,
+          "z": -1557,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "EDB5648FAB804287",
+          "x": 1558,
+          "y": 2,
+          "z": -1719,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "96D91A7C4D0CB801",
+          "x": 1384,
+          "y": 2,
+          "z": -1893,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "AC3ECE72D9AF0EC9",
+          "x": 1174,
+          "y": 2,
+          "z": -2103,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "53E9284280586F4C",
+          "x": 1169,
+          "y": 2,
+          "z": -2257,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "06E0DE073F21F20D",
+          "x": 1042,
+          "y": 2,
+          "z": -2495,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2DD265AD01D29D80",
+          "x": 785,
+          "y": 2,
+          "z": -2752,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F3C69B9324FA1EB8",
+          "x": 919,
+          "y": 2,
+          "z": -2948,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "318BBB59DF4E4F63",
+          "x": 1041,
+          "y": 2,
+          "z": -3070,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0753F30822AF922B",
+          "x": 1169,
+          "y": 2,
+          "z": -3219,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6AFE8F66AB4D167C",
+          "x": 1169,
+          "y": 2,
+          "z": -3480,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0A3FEA32740F5219",
+          "x": 1155,
+          "y": 2,
+          "z": -3687,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        35215,
+        17090,
+        12506,
+        15360,
+        17148,
+        244978,
+        17388,
+        20894,
+        97183,
+        12110,
+        13195,
+        15842,
+        14288
+      ],
+      "depots": [
+        "Drzewiec PKM",
+        "Kacza"
+      ]
+    },
+    {
+      "id": "272D07878F2B6691",
+      "name": "160",
+      "color": 3437745,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "0FDA1F1B30DC892B",
+          "x": -915,
+          "y": -2,
+          "z": 966,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "297954AE4FBA8F98",
+          "x": -964,
+          "y": -2,
+          "z": 925,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2351B5C2E1DEF27B",
+          "x": -1096,
+          "y": 1,
+          "z": 583,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F6D2753923F5D98D",
+          "x": -1096,
+          "y": 2,
+          "z": 245,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "1EE2882F9719BF92",
+          "x": -1096,
+          "y": 2,
+          "z": 14,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B94EE0376E88AADE",
+          "x": -1096,
+          "y": 2,
+          "z": -168,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B559D32F0C685582",
+          "x": -1094,
+          "y": 6,
+          "z": -560,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "9411098EA450AB11",
+          "x": -1094,
+          "y": 3,
+          "z": -797,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B51B259CF2A0127E",
+          "x": -974,
+          "y": 4,
+          "z": -917,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B594E263BA455933",
+          "x": -769,
+          "y": 6,
+          "z": -1117,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2B69734709A07D3C",
+          "x": -769,
+          "y": 7,
+          "z": -1580,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "1EDB81601A5E62A9",
+          "x": -769,
+          "y": 7,
+          "z": -1965,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0045D4FC88458023",
+          "x": -769,
+          "y": 7,
+          "z": -2266,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "C7BBCB1916E27575",
+          "x": -721,
+          "y": 7,
+          "z": -2388,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "8F2F1371373A6F5A",
+          "x": -724,
+          "y": 7,
+          "z": -2316,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        8416,
+        19359,
+        17911,
+        14088,
+        11762,
+        19995,
+        13764,
+        14317,
+        20321,
+        22150,
+        19411,
+        16391,
+        21804,
+        296853,
+        380656
+      ],
+      "depots": [
+        "Wity PKM",
+        "Kacza"
+      ]
+    },
+    {
+      "id": "2D137C12C79DE791",
+      "name": "KF CNT EAST 1",
+      "color": 3128950,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "8A7228C1D88C0918",
+          "x": -2224,
+          "y": -2,
+          "z": 1208,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "297954AE4FBA8F98",
+          "x": -1002,
+          "y": 5,
+          "z": 943,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "BA59237A35CC6898",
+          "x": 682,
+          "y": 0,
+          "z": 1323,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "01F369328A6B32E3",
+          "x": 1434,
+          "y": 0,
+          "z": 1493,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        47556,
+        66305,
+        31679
+      ],
+      "depots": [
+        "Folityn Zachód"
+      ]
+    },
+    {
+      "id": "E59330E789736091",
+      "name": "KF CNT SOUTH 1",
+      "color": 2961230,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "B259AEFFD8B6FA72",
+          "x": -90,
+          "y": -2,
+          "z": -242,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "297954AE4FBA8F98",
+          "x": -1002,
+          "y": 5,
+          "z": 903,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        65551,
+        95806
+      ],
+      "depots": [
+        "Folityn Centralny Main"
+      ]
+    },
+    {
+      "id": "A0D85CA6F87B8193",
+      "name": "KF WEST 1",
+      "color": 9372187,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "89A845AE98BEF10E",
+          "x": -135,
+          "y": 5,
+          "z": -649,
+          "name": "3",
+          "dwellTime": 10000
+        },
+        {
+          "id": "76393D9D2DBB2981",
+          "x": 1279,
+          "y": -2,
+          "z": -1254,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "BE876CAAF18515F3",
+          "x": 2272,
+          "y": -2,
+          "z": -281,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "34F9D6FC18F27893",
+          "x": 3373,
+          "y": -2,
+          "z": -141,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "CFD4825DA3543423",
+          "x": 4560,
+          "y": -2,
+          "z": 234,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "8AF03789812B7C7A",
+          "x": 5680,
+          "y": -2,
+          "z": 760,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6B86817D9842C2B2",
+          "x": 8029,
+          "y": -2,
+          "z": -155,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4F61C8CF4B853BB1",
+          "x": 9270,
+          "y": -2,
+          "z": 144,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "5B49F473AA7A272F",
+          "x": 10303,
+          "y": -2,
+          "z": -696,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        89870,
+        213652,
+        140765,
+        50311,
+        44476,
+        89915,
+        49122,
+        42096,
+        537853
+      ],
+      "depots": [
+        "FDKW"
+      ]
+    },
+    {
+      "id": "F4BF690861B8F596",
+      "name": "6",
+      "color": 855309,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "4CAA65862B77FD59",
+          "x": 1970,
+          "y": -2,
+          "z": -219,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "564174E74993E350",
+          "x": 1815,
+          "y": -2,
+          "z": -134,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "9E1858C9058E38C6",
+          "x": 1657,
+          "y": -2,
+          "z": 0,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0A6B8713F65A4919",
+          "x": 1547,
+          "y": -2,
+          "z": 0,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D579CCB2B54B0A1B",
+          "x": 1393,
+          "y": -2,
+          "z": 0,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "95169A54CC6CE6AA",
+          "x": 1165,
+          "y": -2,
+          "z": 0,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4B43818A1376929F",
+          "x": 1010,
+          "y": -2,
+          "z": 0,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "27625018FA1A76D8",
+          "x": 598,
+          "y": -2,
+          "z": 0,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "73DB3BBE622B885E",
+          "x": 308,
+          "y": -2,
+          "z": 0,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6F672E3D1720B426",
+          "x": 15,
+          "y": -2,
+          "z": 0,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "A810032E61955A2B",
+          "x": -51,
+          "y": -2,
+          "z": -57,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B8A2D87356F099F6",
+          "x": -51,
+          "y": 9,
+          "z": -208,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4B51B036FEBDEE8D",
+          "x": -241,
+          "y": 6,
+          "z": -454,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "895D98C58493A7AA",
+          "x": -467,
+          "y": 6,
+          "z": -454,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "375F010B483A9E8F",
+          "x": -834,
+          "y": 6,
+          "z": -504,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B559D32F0C685582",
+          "x": -1136,
+          "y": 6,
+          "z": -504,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "5B89281A50676D47",
+          "x": -1546,
+          "y": 6,
+          "z": -504,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "A15AB4B46FEC5CA7",
+          "x": -1654,
+          "y": 6,
+          "z": -576,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        12668,
+        12657,
+        9485,
+        11189,
+        13697,
+        10777,
+        20814,
+        16495,
+        15618,
+        8671,
+        11506,
+        20118,
+        13869,
+        19253,
+        16330,
+        20677,
+        11815,
+        14810
+      ],
+      "depots": [
+        "Rondo Rameksi"
+      ]
+    },
+    {
+      "id": "23CFEBD3025B8398",
+      "name": "KF CNT EAST 2",
+      "color": 3128950,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "01F369328A6B32E3",
+          "x": 1436,
+          "y": 0,
+          "z": 1491,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "BA59237A35CC6898",
+          "x": 684,
+          "y": 0,
+          "z": 1321,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "297954AE4FBA8F98",
+          "x": -1002,
+          "y": 5,
+          "z": 903,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "8A7228C1D88C0918",
+          "x": -2227,
+          "y": -2,
+          "z": 1205,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [],
+      "depots": []
+    },
+    {
+      "id": "A5FB8D6565DF1A99",
+      "name": "716",
+      "color": 14713625,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "4CAA65862B77FD59",
+          "x": 1988,
+          "y": -2,
+          "z": -188,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "FA56752B2F20C5C0",
+          "x": 2095,
+          "y": -2,
+          "z": -286,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "803942E115B70C50",
+          "x": 2298,
+          "y": -2,
+          "z": -285,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "834D5EA9B9302376",
+          "x": 2429,
+          "y": -2,
+          "z": -409,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2184D875F44E9B12",
+          "x": 2621,
+          "y": -2,
+          "z": -409,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B93D21B74F548A70",
+          "x": 2763,
+          "y": -2,
+          "z": -407,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "702253D21E865CA4",
+          "x": 2988,
+          "y": -2,
+          "z": -409,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6B3DD0ADDCCD5DD9",
+          "x": 3192,
+          "y": -2,
+          "z": -475,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "10EE61CCACF3A74B",
+          "x": 3452,
+          "y": -2,
+          "z": -597,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "3E3BB1288460AB91",
+          "x": 3619,
+          "y": -2,
+          "z": -681,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6DFC7CA11871074A",
+          "x": 3874,
+          "y": -2,
+          "z": -979,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D25E5F641A908C16",
+          "x": 4072,
+          "y": -2,
+          "z": -1688,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "BC386C248E1023DA",
+          "x": 4082,
+          "y": -2,
+          "z": -1812,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        11654,
+        24458,
+        14055,
+        12370,
+        10150,
+        13850,
+        145355,
+        88499,
+        12362,
+        20615,
+        34420,
+        9655
+      ],
+      "depots": [
+        "Kacza"
+      ]
+    },
+    {
+      "id": "38BE49B6E364F9AE",
+      "name": "KF NW 1",
+      "color": 10311210,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "89A845AE98BEF10E",
+          "x": -126,
+          "y": 5,
+          "z": -652,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0045D4FC88458023",
+          "x": -780,
+          "y": 13,
+          "z": -2282,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "A9A2969D7FC8898E",
+          "x": -1710,
+          "y": 5,
+          "z": -2086,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "5670661627FE59D0",
+          "x": -2939,
+          "y": 6,
+          "z": -2015,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        65482,
+        37208,
+        44144,
+        138669
+      ],
+      "depots": [
+        "FDKW"
+      ]
+    },
+    {
+      "id": "6A87A961C132B5B5",
+      "name": "KF NW 2",
+      "color": 10311210,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "5670661627FE59D0",
+          "x": -2938,
+          "y": 6,
+          "z": -2011,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "A9A2969D7FC8898E",
+          "x": -1707,
+          "y": 5,
+          "z": -2084,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0045D4FC88458023",
+          "x": -780,
+          "y": 13,
+          "z": -2276,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "89A845AE98BEF10E",
+          "x": -130,
+          "y": 5,
+          "z": -649,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        46386,
+        36079,
+        65060,
+        15108
+      ],
+      "depots": [
+        "FDKW"
+      ]
+    },
+    {
+      "id": "D3B0F1C54D47B8B9",
+      "name": "601",
+      "color": 15772198,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "0A3FEA32740F5219",
+          "x": 1155,
+          "y": 2,
+          "z": -3687,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6AFE8F66AB4D167C",
+          "x": 1163,
+          "y": 2,
+          "z": -3506,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0753F30822AF922B",
+          "x": 1134,
+          "y": 2,
+          "z": -3171,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "318BBB59DF4E4F63",
+          "x": 1037,
+          "y": 2,
+          "z": -3074,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F3C69B9324FA1EB8",
+          "x": 918,
+          "y": 2,
+          "z": -2955,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2DD265AD01D29D80",
+          "x": 719,
+          "y": 3,
+          "z": -2756,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "798AE6C7ADC12C2E",
+          "x": 553,
+          "y": 4,
+          "z": -2590,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2BCCB1366F803463",
+          "x": 389,
+          "y": 7,
+          "z": -2426,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "8AE732E6EEEEF144",
+          "x": 134,
+          "y": 7,
+          "z": -2194,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        15397,
+        20164,
+        10458,
+        11475,
+        17147,
+        14533,
+        14850,
+        20470
+      ],
+      "depots": [
+        "Kacza"
+      ]
+    },
+    {
+      "id": "608FD76063FD77BE",
+      "name": "KF N 2",
+      "color": 15756842,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "2DF49E1E61F1343D",
+          "x": 351,
+          "y": 7,
+          "z": -5090,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F94E31699E3308AB",
+          "x": 255,
+          "y": 13,
+          "z": -3574,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "00250C349D7F0DA2",
+          "x": 60,
+          "y": 13,
+          "z": -2420,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "89A845AE98BEF10E",
+          "x": -130,
+          "y": 5,
+          "z": -649,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [],
+      "depots": [
+        "Kraszewo-Lipków Północ"
+      ]
+    },
+    {
+      "id": "677BB5445E550ABF",
+      "name": "KF WEST 2",
+      "color": 9372187,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "5B49F473AA7A272F",
+          "x": 10300,
+          "y": -2,
+          "z": -697,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4F61C8CF4B853BB1",
+          "x": 9269,
+          "y": -2,
+          "z": 141,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6B86817D9842C2B2",
+          "x": 8029,
+          "y": -2,
+          "z": -158,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "8AF03789812B7C7A",
+          "x": 5681,
+          "y": -2,
+          "z": 757,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "CFD4825DA3543423",
+          "x": 4511,
+          "y": -2,
+          "z": 179,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "34F9D6FC18F27893",
+          "x": 3373,
+          "y": -2,
+          "z": -147,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "BE876CAAF18515F3",
+          "x": 2114,
+          "y": -2,
+          "z": -418,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "76393D9D2DBB2981",
+          "x": 1285,
+          "y": -2,
+          "z": -1268,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "89A845AE98BEF10E",
+          "x": -130,
+          "y": 5,
+          "z": -649,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [],
+      "depots": [
+        "Łęczyca Nowa"
+      ]
+    },
+    {
+      "id": "8E39EC3A8F46A2C9",
+      "name": "KF NE 1",
+      "color": 16564538,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "89A845AE98BEF10E",
+          "x": -126,
+          "y": 5,
+          "z": -652,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "00250C349D7F0DA2",
+          "x": 69,
+          "y": 13,
+          "z": -2419,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F94E31699E3308AB",
+          "x": 260,
+          "y": 13,
+          "z": -3574,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "926FF3F78A53167E",
+          "x": 335,
+          "y": 7,
+          "z": -4686,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4E292EC203D6B317",
+          "x": 1816,
+          "y": 0,
+          "z": -4212,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D388C13D597BEF51",
+          "x": 4443,
+          "y": -1,
+          "z": -2875,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "936AC465629A318D",
+          "x": 5462,
+          "y": -1,
+          "z": -3811,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "E0DC4106F549B7A7",
+          "x": 6272,
+          "y": -1,
+          "z": -3856,
+          "name": "2",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        63720,
+        43934,
+        56897,
+        76580,
+        145803,
+        66468,
+        42505,
+        474869
+      ],
+      "depots": [
+        "FDKW"
+      ]
+    },
+    {
+      "id": "B5362107DE80D7CA",
+      "name": "184",
+      "color": 10081235,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "0FDA1F1B30DC892B",
+          "x": -915,
+          "y": -2,
+          "z": 966,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "624FF6C35107F31D",
+          "x": -373,
+          "y": 0,
+          "z": 725,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "7C3FF898E021571D",
+          "x": -246,
+          "y": 0,
+          "z": 544,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "3CE61805B6AFCD25",
+          "x": -246,
+          "y": -1,
+          "z": 369,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "99D3ABB615EF81D3",
+          "x": -236,
+          "y": -2,
+          "z": 155,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "8F4A4B6FF3ACC73B",
+          "x": -123,
+          "y": -2,
+          "z": 167,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6F672E3D1720B426",
+          "x": 15,
+          "y": -2,
+          "z": 4,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "62772A81FDB4C4EE",
+          "x": 257,
+          "y": -2,
+          "z": 111,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "48FB32622C692EA6",
+          "x": 817,
+          "y": -2,
+          "z": 418,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "FE2C8F860C7EC732",
+          "x": 991,
+          "y": -2,
+          "z": 631,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "DA6AAA6FC362C21B",
+          "x": 991,
+          "y": -2,
+          "z": 387,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4B43818A1376929F",
+          "x": 992,
+          "y": -2,
+          "z": -32,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "45DFED4BF4FD3B2E",
+          "x": 992,
+          "y": 1,
+          "z": -149,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "202AC0BDBD7E2C19",
+          "x": 1102,
+          "y": -1,
+          "z": -515,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2C3E2B8E7CEE9DA6",
+          "x": 1166,
+          "y": 0,
+          "z": -597,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "40F735F7A9BE610E",
+          "x": 1272,
+          "y": 0,
+          "z": -703,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2F52FA018E74EBE0",
+          "x": 1190,
+          "y": 0,
+          "z": -849,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F2B1AADCCD630189",
+          "x": 1066,
+          "y": 0,
+          "z": -1064,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F5DCCB08AB815641",
+          "x": 1245,
+          "y": 0,
+          "z": -1241,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        41865,
+        14659,
+        11963,
+        13959,
+        11329,
+        19442,
+        16017,
+        208911,
+        325259,
+        15076,
+        22681,
+        9898,
+        21545,
+        9219,
+        11157,
+        13098,
+        16471,
+        19743,
+        295438
+      ],
+      "depots": [
+        "Wity PKM",
+        "Kacza"
+      ]
+    },
+    {
+      "id": "238AC48AEF7357CB",
+      "name": "601",
+      "color": 15772198,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "8AE732E6EEEEF144",
+          "x": 134,
+          "y": 7,
+          "z": -2194,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2BCCB1366F803463",
+          "x": 389,
+          "y": 7,
+          "z": -2426,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "798AE6C7ADC12C2E",
+          "x": 576,
+          "y": 4,
+          "z": -2605,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2DD265AD01D29D80",
+          "x": 721,
+          "y": 3,
+          "z": -2750,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F3C69B9324FA1EB8",
+          "x": 919,
+          "y": 2,
+          "z": -2948,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "318BBB59DF4E4F63",
+          "x": 1041,
+          "y": 2,
+          "z": -3070,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0753F30822AF922B",
+          "x": 1169,
+          "y": 2,
+          "z": -3219,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6AFE8F66AB4D167C",
+          "x": 1169,
+          "y": 2,
+          "z": -3480,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0A3FEA32740F5219",
+          "x": 1155,
+          "y": 2,
+          "z": -3687,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        169235,
+        50571,
+        13450,
+        16893,
+        12110,
+        13195,
+        15842,
+        14288,
+        250458
+      ],
+      "depots": [
+        "Kacza"
+      ]
+    },
+    {
+      "id": "8ABF3E2DFFC955CE",
+      "name": "175",
+      "color": 2718313,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "F5DCCB08AB815641",
+          "x": 1235,
+          "y": 0,
+          "z": -1269,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "ECA87DD81062BCF7",
+          "x": 1092,
+          "y": 2,
+          "z": -1548,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "582240E8A331571B",
+          "x": 947,
+          "y": 2,
+          "z": -1744,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "BBE621EB575C1AEC",
+          "x": 1222,
+          "y": 2,
+          "z": -1744,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "9644E7933853E8D7",
+          "x": 1434,
+          "y": 2,
+          "z": -1744,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "9B25E84A078B6F4A",
+          "x": 1606,
+          "y": 2,
+          "z": -1844,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D1E1E3F4437393C0",
+          "x": 1606,
+          "y": 2,
+          "z": -2096,
+          "name": "2",
+          "dwellTime": 10000
+        },
+        {
+          "id": "A7398FDCB50C0BDB",
+          "x": 1408,
+          "y": 2,
+          "z": -2147,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "53E9284280586F4C",
+          "x": 1169,
+          "y": 2,
+          "z": -2257,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "06E0DE073F21F20D",
+          "x": 1042,
+          "y": 2,
+          "z": -2495,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2DD265AD01D29D80",
+          "x": 785,
+          "y": 2,
+          "z": -2752,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2DD265AD01D29D80",
+          "x": 719,
+          "y": 3,
+          "z": -2756,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "798AE6C7ADC12C2E",
+          "x": 553,
+          "y": 4,
+          "z": -2590,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2BCCB1366F803463",
+          "x": 389,
+          "y": 7,
+          "z": -2426,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "8AE732E6EEEEF144",
+          "x": 134,
+          "y": 7,
+          "z": -2194,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        47896,
+        18908,
+        16508,
+        14075,
+        14003,
+        15161,
+        14707,
+        19603,
+        17388,
+        20894,
+        7839,
+        14538,
+        14850,
+        20470,
+        18655
+      ],
+      "depots": [
+        "Drzewiec PKM",
+        "Kacza"
+      ]
+    },
+    {
+      "id": "28185E5FE41EDDD0",
+      "name": "180",
+      "color": 3301749,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "48B68661D1EAB335",
+          "x": 2403,
+          "y": -2,
+          "z": -1149,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "794AE6BD7F6C2279",
+          "x": 2414,
+          "y": -2,
+          "z": -1259,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "5EF050DD9EE50B5D",
+          "x": 2549,
+          "y": -2,
+          "z": -1529,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "5EF050DD9EE50B5D",
+          "x": 2555,
+          "y": -2,
+          "z": -1778,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6FB392597EE632EF",
+          "x": 2406,
+          "y": -2,
+          "z": -1840,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "311A7444A854E477",
+          "x": 2270,
+          "y": -2,
+          "z": -1745,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "47E08DF2477812BA",
+          "x": 1837,
+          "y": -2,
+          "z": -1549,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "166D66944C8E349C",
+          "x": 1595,
+          "y": 12,
+          "z": -1539,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F2FAFDDF0BE8B789",
+          "x": 1383,
+          "y": 2,
+          "z": -1467,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F5DCCB08AB815641",
+          "x": 1245,
+          "y": 0,
+          "z": -1241,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        16378,
+        17602,
+        15990,
+        16176,
+        16530,
+        26280,
+        15077,
+        14970,
+        33412,
+        6623
+      ],
+      "depots": [
+        "Kacza"
+      ]
+    },
+    {
+      "id": "EE5744A05FAB51DA",
+      "name": "182",
+      "color": 2727507,
+      "number": "2",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "86C226504ADF7D09",
+          "x": -562,
+          "y": -2,
+          "z": 1864,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B712FDCEFF90D313",
+          "x": -530,
+          "y": -2,
+          "z": 1797,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "17513A02B76B2D10",
+          "x": -37,
+          "y": -2,
+          "z": 1797,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "997DCE67C5A22B4D",
+          "x": 114,
+          "y": -2,
+          "z": 1797,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "65D2BE7E9A6B9F2E",
+          "x": 414,
+          "y": -2,
+          "z": 1797,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "367392F540CCF92C",
+          "x": 516,
+          "y": -6,
+          "z": 1333,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "CEB7D39DE664C52A",
+          "x": 516,
+          "y": -6,
+          "z": 1140,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "1E2C5F95E1172074",
+          "x": 645,
+          "y": -2,
+          "z": 946,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "040CA6CD06B896A0",
+          "x": 881,
+          "y": -2,
+          "z": 997,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "1E976BE601CC9108",
+          "x": 980,
+          "y": -2,
+          "z": 985,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "1DCF4840F4211803",
+          "x": 991,
+          "y": -2,
+          "z": 832,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "FE2C8F860C7EC732",
+          "x": 991,
+          "y": -2,
+          "z": 631,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "10147DBE48FB0898",
+          "x": 1357,
+          "y": -2,
+          "z": 510,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D579CCB2B54B0A1B",
+          "x": 1358,
+          "y": -2,
+          "z": 37,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D8B4C0A9157BA2B4",
+          "x": 1353,
+          "y": -2,
+          "z": -232,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "FBEE469BA838427B",
+          "x": 1398,
+          "y": -2,
+          "z": -434,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "C0B87E11AB4A27D7",
+          "x": 1697,
+          "y": -2,
+          "z": -434,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        9012,
+        26138,
+        10837,
+        17947,
+        34888,
+        12814,
+        20606,
+        16223,
+        12826,
+        11333,
+        13410,
+        25607,
+        25511,
+        16743,
+        14800,
+        18128,
+        11662
+      ],
+      "depots": [
+        "Os. Drzewnia",
+        "Os. Wirenka",
+        "Kacza"
+      ]
+    },
+    {
+      "id": "7FD51FD7A39917F0",
+      "name": "6",
+      "color": 855309,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "A15AB4B46FEC5CA7",
+          "x": -1658,
+          "y": 6,
+          "z": -576,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "5B89281A50676D47",
+          "x": -1546,
+          "y": 6,
+          "z": -500,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B559D32F0C685582",
+          "x": -1074,
+          "y": 6,
+          "z": -500,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "375F010B483A9E8F",
+          "x": -834,
+          "y": 6,
+          "z": -500,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "895D98C58493A7AA",
+          "x": -477,
+          "y": 6,
+          "z": -450,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4B51B036FEBDEE8D",
+          "x": -241,
+          "y": 6,
+          "z": -450,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B8A2D87356F099F6",
+          "x": -55,
+          "y": 9,
+          "z": -208,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "A810032E61955A2B",
+          "x": -55,
+          "y": -2,
+          "z": -57,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6F672E3D1720B426",
+          "x": 15,
+          "y": -2,
+          "z": 4,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "73DB3BBE622B885E",
+          "x": 205,
+          "y": -2,
+          "z": 4,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "27625018FA1A76D8",
+          "x": 769,
+          "y": -2,
+          "z": 4,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4B43818A1376929F",
+          "x": 957,
+          "y": -2,
+          "z": 4,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "95169A54CC6CE6AA",
+          "x": 1165,
+          "y": -2,
+          "z": 4,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D579CCB2B54B0A1B",
+          "x": 1382,
+          "y": -2,
+          "z": 4,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0A6B8713F65A4919",
+          "x": 1548,
+          "y": -2,
+          "z": 4,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "9E1858C9058E38C6",
+          "x": 1657,
+          "y": -2,
+          "z": 4,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "564174E74993E350",
+          "x": 1818,
+          "y": -2,
+          "z": -132,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4CAA65862B77FD59",
+          "x": 1937,
+          "y": -2,
+          "z": -181,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        12396,
+        22123,
+        14485,
+        18880,
+        13981,
+        20730,
+        10408,
+        9343,
+        12663,
+        25715,
+        12105,
+        13450,
+        13128,
+        11809,
+        8773,
+        13983,
+        10803
+      ],
+      "depots": [
+        "Rondo Rameksi"
+      ]
+    },
+    {
+      "id": "B9A9572F4D062DF1",
+      "name": "ŁC Regio 3",
+      "color": 13842715,
+      "number": "",
+      "type": "train_normal",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "FBF0FC8F6940DEBF",
+          "x": 10616,
+          "y": -2,
+          "z": -1107,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "E206402884DBFCAA",
+          "x": 9827,
+          "y": -2,
+          "z": -1307,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "3BEB36A5B26AE0B5",
+          "x": 9238,
+          "y": -2,
+          "z": -1896,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [],
+      "depots": [
+        "Łęczyca Stara"
+      ]
+    },
+    {
+      "id": "BB31EB1C3965C7F2",
+      "name": "175",
+      "color": 2718313,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "8AE732E6EEEEF144",
+          "x": 134,
+          "y": 7,
+          "z": -2194,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2BCCB1366F803463",
+          "x": 389,
+          "y": 7,
+          "z": -2426,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "798AE6C7ADC12C2E",
+          "x": 576,
+          "y": 4,
+          "z": -2605,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2DD265AD01D29D80",
+          "x": 721,
+          "y": 3,
+          "z": -2750,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2DD265AD01D29D80",
+          "x": 781,
+          "y": 2,
+          "z": -2748,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "06E0DE073F21F20D",
+          "x": 1038,
+          "y": 2,
+          "z": -2492,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "53E9284280586F4C",
+          "x": 1163,
+          "y": 2,
+          "z": -2232,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "A7398FDCB50C0BDB",
+          "x": 1382,
+          "y": 2,
+          "z": -2141,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "D1E1E3F4437393C0",
+          "x": 1556,
+          "y": 2,
+          "z": -2141,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "9B25E84A078B6F4A",
+          "x": 1600,
+          "y": 2,
+          "z": -1844,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "9644E7933853E8D7",
+          "x": 1433,
+          "y": 2,
+          "z": -1750,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "BBE621EB575C1AEC",
+          "x": 1223,
+          "y": 2,
+          "z": -1750,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "582240E8A331571B",
+          "x": 947,
+          "y": 2,
+          "z": -1750,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "ECA87DD81062BCF7",
+          "x": 1088,
+          "y": 2,
+          "z": -1545,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F5DCCB08AB815641",
+          "x": 1245,
+          "y": 0,
+          "z": -1241,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        169235,
+        50571,
+        13450,
+        8339,
+        20195,
+        18146,
+        19100,
+        12190,
+        19025,
+        14308,
+        13321,
+        16739,
+        19516,
+        34342,
+        6623
+      ],
+      "depots": [
+        "Drzewiec PKM",
+        "Kacza"
+      ]
+    },
+    {
+      "id": "D9EF954BD2A9A9F7",
+      "name": "160",
+      "color": 3437745,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "8F2F1371373A6F5A",
+          "x": -724,
+          "y": 7,
+          "z": -2316,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0045D4FC88458023",
+          "x": -789,
+          "y": 7,
+          "z": -2278,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "1EDB81601A5E62A9",
+          "x": -789,
+          "y": 7,
+          "z": -1966,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2B69734709A07D3C",
+          "x": -789,
+          "y": 7,
+          "z": -1580,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B594E263BA455933",
+          "x": -789,
+          "y": 6,
+          "z": -1119,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B51B259CF2A0127E",
+          "x": -974,
+          "y": 4,
+          "z": -923,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "9411098EA450AB11",
+          "x": -1100,
+          "y": 3,
+          "z": -796,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B559D32F0C685582",
+          "x": -1113,
+          "y": 6,
+          "z": -437,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "B94EE0376E88AADE",
+          "x": -1102,
+          "y": 2,
+          "z": -168,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "1EE2882F9719BF92",
+          "x": -1102,
+          "y": 2,
+          "z": -27,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F6D2753923F5D98D",
+          "x": -1102,
+          "y": 2,
+          "z": 245,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2351B5C2E1DEF27B",
+          "x": -1103,
+          "y": 1,
+          "z": 583,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "297954AE4FBA8F98",
+          "x": -987,
+          "y": -2,
+          "z": 921,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0FDA1F1B30DC892B",
+          "x": -915,
+          "y": -2,
+          "z": 966,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        20375,
+        17256,
+        19554,
+        22291,
+        18913,
+        14392,
+        19059,
+        14941,
+        10870,
+        15283,
+        17623,
+        19790,
+        16259
+      ],
+      "depots": [
+        "Folityn Drzewnia",
+        "Kacza"
+      ]
+    },
+    {
+      "id": "D882271109AB04F8",
+      "name": "184",
+      "color": 10081235,
+      "number": "",
+      "type": "train_light_rail",
+      "circularState": "NONE",
+      "hidden": false,
+      "stations": [
+        {
+          "id": "F5DCCB08AB815641",
+          "x": 1211,
+          "y": 0,
+          "z": -1284,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "F2B1AADCCD630189",
+          "x": 1046,
+          "y": 0,
+          "z": -1065,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2F52FA018E74EBE0",
+          "x": 1190,
+          "y": 0,
+          "z": -849,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "40F735F7A9BE610E",
+          "x": 1221,
+          "y": 0,
+          "z": -790,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "2C3E2B8E7CEE9DA6",
+          "x": 1166,
+          "y": 0,
+          "z": -597,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "202AC0BDBD7E2C19",
+          "x": 1083,
+          "y": -1,
+          "z": -495,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "45DFED4BF4FD3B2E",
+          "x": 973,
+          "y": 1,
+          "z": -148,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "4B43818A1376929F",
+          "x": 974,
+          "y": -2,
+          "z": 48,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "DA6AAA6FC362C21B",
+          "x": 974,
+          "y": -2,
+          "z": 327,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "FE2C8F860C7EC732",
+          "x": 974,
+          "y": -2,
+          "z": 555,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "48FB32622C692EA6",
+          "x": 763,
+          "y": -2,
+          "z": 373,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "62772A81FDB4C4EE",
+          "x": 215,
+          "y": -2,
+          "z": 83,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "6F672E3D1720B426",
+          "x": 15,
+          "y": -2,
+          "z": 0,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "8F4A4B6FF3ACC73B",
+          "x": -123,
+          "y": -2,
+          "z": 163,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "99D3ABB615EF81D3",
+          "x": -252,
+          "y": -2,
+          "z": 224,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "3CE61805B6AFCD25",
+          "x": -252,
+          "y": -1,
+          "z": 368,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "7C3FF898E021571D",
+          "x": -297,
+          "y": 0,
+          "z": 627,
+          "name": "1",
+          "dwellTime": 10000
+        },
+        {
+          "id": "0FDA1F1B30DC892B",
+          "x": -915,
+          "y": -2,
+          "z": 966,
+          "name": "1",
+          "dwellTime": 10000
+        }
+      ],
+      "durations": [
+        23244,
+        410331,
+        72710,
+        376953,
+        104667,
+        21163,
+        12958,
+        17176,
+        14077,
+        244616,
+        212972,
+        13474,
+        15663,
+        16799,
+        10663,
+        16849,
+        54851
+      ],
+      "depots": [
+        "Wity PKM",
+        "Kacza"
+      ]
+    }
+  ],
+  "dimensions": [
+    "minecraft/overworld",
+    "minecraft/the_nether",
+    "minecraft/the_end"
+  ]
+}
