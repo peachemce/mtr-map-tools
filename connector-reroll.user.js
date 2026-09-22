@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         MTR Map Tools - Topology-Safe Schematic Layout
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      0.6.0
-// @description  Deterministic topology-preserving octilinear layout for the MTR web map.
+// @version      0.7.0
+// @description  Deterministic schematic layout with exact manual corridor locks for the MTR web map.
 // @match        http://localhost:8888/*
 // @run-at       document-start
 // @grant        none
@@ -14,18 +14,19 @@
 (() => {
   'use strict';
 
-  // v2 keys intentionally ignore the experimental v0.5 settings.
   const KEY_ENABLED = 'mtr-map-tools-schematic-v2-enabled';
   const KEY_STRENGTH = 'mtr-map-tools-schematic-v2-strength';
   const KEY_SPACING = 'mtr-map-tools-schematic-v2-spacing';
   const KEY_STRAIGHT = 'mtr-map-tools-schematic-v2-straightening';
   const KEY_SCALE = 'mtr-map-tools-schematic-v2-scale';
+  const KEY_ROGOWSKA_FIX = 'mtr-map-tools-rogowska-corridor-fix';
 
   const enabled = localStorage.getItem(KEY_ENABLED) === '1';
   const strength = clamp(Number(localStorage.getItem(KEY_STRENGTH) ?? '0.72'), 0, 1);
   const spacingUniformity = clamp(Number(localStorage.getItem(KEY_SPACING) ?? '0.65'), 0, 1);
   const straightening = clamp(Number(localStorage.getItem(KEY_STRAIGHT) ?? '0.55'), 0, 1);
   const mapScale = clamp(Number(localStorage.getItem(KEY_SCALE) ?? '0.90'), 0.6, 1.25);
+  const rogowskaFix = localStorage.getItem(KEY_ROGOWSKA_FIX) !== '0';
 
   const nativeParse = JSON.parse.bind(JSON);
   const nativeResponseJson = window.Response?.prototype?.json;
@@ -75,9 +76,8 @@
   function transformNetwork(value) {
     if (!enabled || !looksLikeStationsAndRoutes(value)) return value;
     const d = payloadOf(value);
-    if (d.__mtrMapToolsSchematicV2) return value;
+    if (d.__mtrMapToolsSchematicV3) return value;
 
-    // 1) One global original position per station, shared by ALL transport modes/routes.
     const occurrences = new Map();
     for (const route of d.routes) {
       if (!Array.isArray(route?.stations)) continue;
@@ -100,7 +100,6 @@
     }
     if (original.size < 2) return value;
 
-    // 2) Build route edges across every mode, and collect corridor-direction proposals.
     const routeEdges = new Map();
     const rawRouteLengths = [];
 
@@ -144,7 +143,6 @@
       }
       if (!segments.length) continue;
 
-      // Group gentle bends into one corridor so a route trunk becomes one clean axis.
       let start = 0;
       while (start < segments.length) {
         let end = start;
@@ -172,7 +170,6 @@
         for (let i = start; i <= end; i++) {
           const seg = segments[i];
           const edge = seg.edge;
-          // Convert traversal direction to the edge's canonical a->b direction.
           let directedAngle = corridorAngle;
           if (seg.from !== edge.a) directedAngle += Math.PI;
           const idx = ((Math.round(directedAngle / (Math.PI / 4)) % 8) + 8) % 8;
@@ -185,7 +182,6 @@
     if (!routeEdges.size) return value;
     const medianLength = median(rawRouteLengths);
 
-    // 3) Add station/interchange connections. These were missing in v0.5 and caused splits.
     const transferEdges = new Map();
     for (const station of d.stations) {
       if (!station?.id || !original.has(station.id) || !Array.isArray(station.connections)) continue;
@@ -204,7 +200,6 @@
       }
     }
 
-    // 4) Turn voted route geometry into deterministic 0/45/90-degree constraints.
     const constraints = [];
     for (const edge of routeEdges.values()) {
       let bestIdx = null, bestVotes = -1;
@@ -228,7 +223,6 @@
 
     for (const edge of transferEdges.values()) {
       const angle = snapAngle(edge.angle);
-      // Keep interchange links local instead of allowing giant dashed cross-map lines.
       const len = clamp(edge.len, medianLength * 0.10, medianLength * 0.45) * mapScale;
       constraints.push({
         a: edge.a, b: edge.b,
@@ -239,7 +233,6 @@
       });
     }
 
-    // 5) Combined graph = route edges + transfer edges. Find connected components and pin each one.
     const neighbors = new Map([...original.keys()].map(id => [id, new Set()]));
     for (const c of constraints) {
       neighbors.get(c.a)?.add(c.b);
@@ -291,7 +284,6 @@
         if (!anchors.has(c.b)) { b.x -= mx; b.z -= mz; }
       }
 
-      // Mild geographic memory: enough to preserve north/east ordering, not enough to block schematization.
       const geographyPull = (1 - strength) * 0.018;
       if (geographyPull > 0) {
         for (const [id, p] of pos) {
@@ -302,14 +294,12 @@
         }
       }
 
-      // Keep every component anchor exactly at its original station.
       for (const anchor of anchors) {
         const p = pos.get(anchor), o = original.get(anchor);
         p.x = o.x; p.z = o.z;
       }
     }
 
-    // 6) Recenter EACH connected component on its original centroid. No random islands/drift.
     components.forEach(ids => {
       if (!ids.length) return;
       let ox = 0, oz = 0, nx = 0, nz = 0;
@@ -325,14 +315,46 @@
       }
     });
 
-    // 7) Final blend keeps the result readable but recognisably related to geography.
     const finalPos = new Map();
     for (const [id, o] of original) {
       const p = pos.get(id) || o;
       finalPos.set(id, { x: lerp(o.x, p.x, strength), z: lerp(o.z, p.z, strength) });
     }
 
-    // Write the SAME position to every occurrence of each station in every route/mode.
+    if (rogowskaFix) {
+      const nameToId = new Map((d.stations || []).map(s => [s.name, s.id]));
+
+      function placeCorridor(names, angle) {
+        const ids = names.map(name => nameToId.get(name));
+        if (ids.some(id => !id || !finalPos.has(id))) return;
+
+        for (let i = 1; i < ids.length; i++) {
+          const prevId = ids[i - 1];
+          const nextId = ids[i];
+          const prev = finalPos.get(prevId);
+          const edge = routeEdges.get(pairKey(prevId, nextId));
+          const rawLen = edge?.len ?? medianLength;
+          const len = targetLength(rawLen, medianLength);
+          finalPos.set(nextId, {
+            x: prev.x + Math.cos(angle) * len,
+            z: prev.z + Math.sin(angle) * len,
+          });
+        }
+      }
+
+      placeCorridor([
+        'Rogowska Centrum Miejskie',
+        'Witkowskiego',
+        'Rogowska/Dąbka',
+        'Rogowska',
+      ], Math.PI / 4);
+
+      placeCorridor([
+        'Rogowska Centrum Miejskie',
+        'Grochowa',
+      ], -Math.PI / 4);
+    }
+
     for (const route of d.routes) {
       if (!Array.isArray(route?.stations)) continue;
       for (const stop of route.stations) {
@@ -344,20 +366,17 @@
     }
 
     try {
-      Object.defineProperty(d, '__mtrMapToolsSchematicV2', { value: true, enumerable: false });
+      Object.defineProperty(d, '__mtrMapToolsSchematicV3', { value: true, enumerable: false });
     } catch (_) {
-      d.__mtrMapToolsSchematicV2 = true;
+      d.__mtrMapToolsSchematicV3 = true;
     }
 
-    console.log('[MTR Map Tools] topology-safe schematic applied', {
+    console.log('[MTR Map Tools] schematic v0.7 applied', {
       stations: original.size,
       routeEdges: routeEdges.size,
       transferEdges: transferEdges.size,
       components: components.length,
-      strength,
-      spacingUniformity,
-      straightening,
-      mapScale,
+      rogowskaFix,
     });
     return value;
   }
@@ -404,11 +423,12 @@
     return { row, input };
   }
 
-  function saveAndReload(values, turnOn) {
+  function saveAndReload(values, turnOn, localFix) {
     localStorage.setItem(KEY_STRENGTH, String(values.strength));
     localStorage.setItem(KEY_SPACING, String(values.spacing));
     localStorage.setItem(KEY_STRAIGHT, String(values.straight));
     localStorage.setItem(KEY_SCALE, String(values.scale));
+    localStorage.setItem(KEY_ROGOWSKA_FIX, localFix ? '1' : '0');
     localStorage.setItem(KEY_ENABLED, turnOn ? '1' : '0');
     location.reload();
   }
@@ -418,18 +438,27 @@
     const panel = document.createElement('div');
     panel.id = 'mtr-schematic-v2-controls';
     Object.assign(panel.style, {
-      position: 'fixed', left: '14px', bottom: '14px', zIndex: '1000000', width: '330px',
+      position: 'fixed', left: '14px', bottom: '14px', zIndex: '1000000', width: '340px',
       padding: '11px', borderRadius: '11px', background: 'rgba(17,24,39,.96)', color: '#fff',
       font: '600 12px/1.3 system-ui,sans-serif', boxShadow: '0 5px 20px rgba(0,0,0,.3)', userSelect: 'none',
     });
 
     const title = document.createElement('div');
-    title.innerHTML = `<strong style="font-size:14px">Topology-safe schematic</strong><div style="opacity:.65;font-weight:500;margin-top:2px">All modes share one station layout · ${enabled ? 'ON' : 'original'}</div>`;
+    title.innerHTML = `<strong style="font-size:14px">Topology-safe schematic</strong><div style="opacity:.65;font-weight:500;margin-top:2px">Automatic layout + exact corridor locks · ${enabled ? 'ON' : 'original'}</div>`;
 
     const strengthRow = sliderRow('Schematic', 0, 100, Math.round(strength * 100));
     const spacingRow = sliderRow('Equal spacing', 0, 100, Math.round(spacingUniformity * 100));
     const straightRow = sliderRow('Straighten', 0, 100, Math.round(straightening * 100));
     const scaleRow = sliderRow('Line length', 60, 125, Math.round(mapScale * 100));
+
+    const fixRow = document.createElement('label');
+    fixRow.style.cssText = 'display:flex;align-items:center;gap:7px;margin-top:9px;font-weight:500;cursor:pointer';
+    const fixCheckbox = document.createElement('input');
+    fixCheckbox.type = 'checkbox';
+    fixCheckbox.checked = rogowskaFix;
+    const fixText = document.createElement('span');
+    fixText.textContent = 'Lock Rogowska corridor + 45° Grochowa branch';
+    fixRow.append(fixCheckbox, fixText);
 
     const buttons = document.createElement('div');
     buttons.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px';
@@ -444,20 +473,24 @@
 
     const note = document.createElement('div');
     note.style.cssText = 'opacity:.60;font-size:11px;font-weight:500;margin-top:8px';
-    note.textContent = 'Deterministic: no random layouts. Interchange/station links are part of the graph, so connected pieces stay together.';
+    note.textContent = 'The Rogowska lock is exact: CM Miejskie → Witkowskiego → Rogowska/Dąbka → Rogowska stays one diagonal; CM Miejskie → Grochowa is fixed 45° up-right.';
 
-    apply.onclick = () => saveAndReload({
-      strength: Number(strengthRow.input.value) / 100,
-      spacing: Number(spacingRow.input.value) / 100,
-      straight: Number(straightRow.input.value) / 100,
-      scale: Number(scaleRow.input.value) / 100,
-    }, true);
+    function values() {
+      return {
+        strength: Number(strengthRow.input.value) / 100,
+        spacing: Number(spacingRow.input.value) / 100,
+        straight: Number(straightRow.input.value) / 100,
+        scale: Number(scaleRow.input.value) / 100,
+      };
+    }
 
-    preset.onclick = () => saveAndReload({ strength: 0.78, spacing: 0.70, straight: 0.62, scale: 0.90 }, true);
-    gentle.onclick = () => saveAndReload({ strength: 0.50, spacing: 0.42, straight: 0.38, scale: 0.96 }, true);
+    apply.onclick = () => saveAndReload(values(), true, fixCheckbox.checked);
+    preset.onclick = () => saveAndReload({ strength: 0.78, spacing: 0.70, straight: 0.62, scale: 0.90 }, true, fixCheckbox.checked);
+    gentle.onclick = () => saveAndReload({ strength: 0.50, spacing: 0.42, straight: 0.38, scale: 0.96 }, true, fixCheckbox.checked);
     originalBtn.onclick = () => { localStorage.setItem(KEY_ENABLED, '0'); location.reload(); };
+    fixCheckbox.onchange = () => saveAndReload(values(), true, fixCheckbox.checked);
 
-    panel.append(title, strengthRow.row, spacingRow.row, straightRow.row, scaleRow.row, buttons, gentle, note);
+    panel.append(title, strengthRow.row, spacingRow.row, straightRow.row, scaleRow.row, fixRow, buttons, gentle, note);
     document.body.appendChild(panel);
   }
 
