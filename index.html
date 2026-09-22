@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MTR Map Tools</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">MTR</div>
+        <div>
+          <h1>MTR Map Tools</h1>
+          <p>Public network snapshot</p>
+        </div>
+      </div>
+
+      <div class="snapshot-card">
+        <span class="status-dot" id="statusDot"></span>
+        <div>
+          <strong id="snapshotStatus">Loading network…</strong>
+          <div id="snapshotTime" class="muted"></div>
+        </div>
+      </div>
+
+      <label class="field-label" for="stationSearch">Find a station</label>
+      <input id="stationSearch" class="search" type="search" placeholder="Type a station name…" autocomplete="off">
+      <div id="searchResults" class="search-results"></div>
+
+      <div class="section-heading">
+        <span>Routes</span>
+        <button id="toggleAll" class="link-button" type="button">Hide all</button>
+      </div>
+      <div id="routeList" class="route-list"></div>
+
+      <div class="help-card">
+        <strong>Public mode</strong>
+        <p>This page uses the last network snapshot published from Minecraft. It remains available even when the game is offline.</p>
+      </div>
+    </aside>
+
+    <main class="map-shell">
+      <div class="map-toolbar">
+        <button id="zoomIn" type="button" title="Zoom in">+</button>
+        <button id="zoomOut" type="button" title="Zoom out">−</button>
+        <button id="fitMap" type="button">Fit network</button>
+      </div>
+
+      <div id="emptyState" class="empty-state" hidden>
+        <h2>No public network snapshot yet</h2>
+        <p>Run Minecraft/MTR, export <code>network.json</code> with the included userscript, then publish it to <code>data/network.json</code>.</p>
+      </div>
+
+      <svg id="map" aria-label="Minecraft Transit Railway network map">
+        <g id="viewport">
+          <g id="routesLayer"></g>
+          <g id="stationsLayer"></g>
+          <g id="labelsLayer"></g>
+        </g>
+      </svg>
+
+      <div id="stationPopup" class="station-popup" hidden></div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
