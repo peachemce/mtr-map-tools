@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         MTR Map Tools - Connector Geometry Lab
+// @name         MTR Map Tools - Connector Geometry Editor
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      0.2.0
-// @description  Rotate and smooth MTR system-map connector approach directions without changing the Minecraft network.
+// @version      0.3.0
+// @description  Give individual MTR map connections real alternate geometry using virtual bend points.
 // @match        http://localhost:8888/*
 // @run-at       document-start
 // @grant        none
@@ -14,20 +14,25 @@
 (() => {
   'use strict';
 
-  const KEY_ENABLED = 'mtr-map-tools-geometry-enabled';
-  const KEY_ROTATION = 'mtr-map-tools-geometry-rotation';
-  const KEY_SMOOTHING = 'mtr-map-tools-geometry-smoothing';
-
-  const enabled = localStorage.getItem(KEY_ENABLED) === '1';
-  const rotationDegrees = clamp(Number(localStorage.getItem(KEY_ROTATION) ?? '0'), -45, 45);
-  const smoothing = clamp(Number(localStorage.getItem(KEY_SMOOTHING) ?? '0.85'), 0, 1);
-
+  const KEY_OVERRIDES = 'mtr-map-tools-geometry-overrides-v1';
   const nativePush = Array.prototype.push;
-  const QUARTER_TURN = Math.PI / 4;
-  const HALF_TURN = Math.PI;
+  const overrides = loadOverrides();
 
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
+  function loadOverrides() {
+    try {
+      const value = JSON.parse(localStorage.getItem(KEY_OVERRIDES) || '{}');
+      return value && typeof value === 'object' ? value : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function saveOverrides() {
+    localStorage.setItem(KEY_OVERRIDES, JSON.stringify(overrides));
+  }
+
+  function connectionKey(id1, id2) {
+    return id1 < id2 ? `${id1}|${id2}` : `${id2}|${id1}`;
   }
 
   function looksLikeMtrLineConnection(value) {
@@ -36,8 +41,6 @@
       Array.isArray(value.lineConnectionParts) &&
       Number.isInteger(value.direction1) &&
       Number.isInteger(value.direction2) &&
-      value.direction1 >= 0 && value.direction1 <= 3 &&
-      value.direction2 >= 0 && value.direction2 <= 3 &&
       typeof value.stationId1 === 'string' &&
       typeof value.stationId2 === 'string' &&
       typeof value.x1 === 'number' &&
@@ -47,210 +50,344 @@
       typeof value.relativeLength === 'number';
   }
 
-  // MTR only has four undirected connector approach axes:
-  //   0° / 45° / 90° / 135°.
-  // We rotate the real station-to-station vector continuously, then snap it back
-  // to the nearest legal MTR axis. This gives controlled alternates instead of chaos.
-  function idealDirection(connection) {
-    const dx = connection.x2 - connection.x1;
-    const dz = connection.z2 - connection.z1;
-    if (Math.abs(dx) + Math.abs(dz) < 1e-9) return connection.direction1;
+  function directionForSegment(a, b) {
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const ax = Math.abs(dx);
+    const az = Math.abs(dz);
+    const eps = 1e-6;
 
-    let angle = Math.atan2(dz, dx) + rotationDegrees * Math.PI / 180;
-    angle = normalizeAxisAngle(angle);
-    return ((Math.round(angle / QUARTER_TURN) % 4) + 4) % 4;
+    if (az < eps) return 0; // horizontal
+    if (ax < eps) return 2; // vertical
+    if (Math.abs(ax - az) < eps) return dx * dz < 0 ? 1 : 3; // 45 degrees
+
+    // Fallback: nearest legal MTR axis (0, 45, 90, 135 degrees).
+    let angle = Math.atan2(dz, dx);
+    angle %= Math.PI;
+    if (angle < 0) angle += Math.PI;
+    return ((Math.round(angle / (Math.PI / 4)) % 4) + 4) % 4;
   }
 
-  function normalizeAxisAngle(angle) {
-    angle %= HALF_TURN;
-    if (angle < 0) angle += HALF_TURN;
-    return angle;
+  function uniquePoints(points) {
+    const out = [];
+    for (const p of points) {
+      const last = out[out.length - 1];
+      if (!last || Math.hypot(last.x - p.x, last.z - p.z) > 1e-6) out.push(p);
+    }
+    return out;
   }
 
-  // Blend between two *axes* rather than directed arrows. A line at 0° is the
-  // same axis as one at 180°, so the shortest delta lives in [-90°, +90°].
-  function blendAxisDirection(originalDirection, targetDirection, amount) {
-    const original = originalDirection * QUARTER_TURN;
-    const target = targetDirection * QUARTER_TURN;
+  function geometryPoints(connection, setting) {
+    const a = { x: connection.x1, z: connection.z1 };
+    const b = { x: connection.x2, z: connection.z2 };
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const ax = Math.abs(dx);
+    const az = Math.abs(dz);
+    const sx = Math.sign(dx) || 1;
+    const sz = Math.sign(dz) || 1;
+    const diagonal = Math.min(ax, az);
+    const marginBase = Math.max(120, Math.min(1200, Math.hypot(dx, dz) * (Number(setting.amount) || 0.22)));
 
-    let delta = target - original;
-    while (delta >= Math.PI / 2) delta -= HALF_TURN;
-    while (delta < -Math.PI / 2) delta += HALF_TURN;
+    switch (setting.shape) {
+      case 'HV':
+        return uniquePoints([a, { x: b.x, z: a.z }, b]);
 
-    const blended = normalizeAxisAngle(original + delta * amount);
-    return ((Math.round(blended / QUARTER_TURN) % 4) + 4) % 4;
-  }
+      case 'VH':
+        return uniquePoints([a, { x: a.x, z: b.z }, b]);
 
-  function optimizeConnection(connection) {
-    if (!enabled || !looksLikeMtrLineConnection(connection)) return;
-    if (connection.__mtrMapToolsGeometryOptimized) return;
+      case 'DIAG_FIRST':
+        return uniquePoints([
+          a,
+          { x: a.x + sx * diagonal, z: a.z + sz * diagonal },
+          b,
+        ]);
 
-    const target = idealDirection(connection);
+      case 'DIAG_LAST':
+        return uniquePoints([
+          a,
+          { x: b.x - sx * diagonal, z: b.z - sz * diagonal },
+          b,
+        ]);
 
-    // At 100% both ends approach on the same axis as the actual connector vector.
-    // This is what gets rid of needless U-shapes and opposite-facing hooks.
-    connection.direction1 = blendAxisDirection(connection.direction1, target, smoothing);
-    connection.direction2 = blendAxisDirection(connection.direction2, target, smoothing);
+      case 'ABOVE': {
+        const z = Math.min(a.z, b.z) - marginBase;
+        return uniquePoints([a, { x: a.x, z }, { x: b.x, z }, b]);
+      }
 
-    try {
-      Object.defineProperty(connection, '__mtrMapToolsGeometryOptimized', {
-        value: true,
-        enumerable: false,
-        configurable: false,
-      });
-    } catch (_) {
-      connection.__mtrMapToolsGeometryOptimized = true;
+      case 'BELOW': {
+        const z = Math.max(a.z, b.z) + marginBase;
+        return uniquePoints([a, { x: a.x, z }, { x: b.x, z }, b]);
+      }
+
+      case 'LEFT': {
+        const x = Math.min(a.x, b.x) - marginBase;
+        return uniquePoints([a, { x, z: a.z }, { x, z: b.z }, b]);
+      }
+
+      case 'RIGHT': {
+        const x = Math.max(a.x, b.x) + marginBase;
+        return uniquePoints([a, { x, z: a.z }, { x, z: b.z }, b]);
+      }
+
+      default:
+        return [a, b];
     }
   }
 
-  // MTR pushes final LineConnection objects into its calculated connection array.
-  // Intercept only that exact object shape; all unrelated Array.push calls are untouched.
+  function splitConnection(connection, setting) {
+    if (!setting || setting.shape === 'NATIVE') return [connection];
+
+    const points = geometryPoints(connection, setting);
+    if (points.length < 2) return [connection];
+
+    const lengths = [];
+    let totalLength = 0;
+    for (let i = 1; i < points.length; i++) {
+      const len = Math.hypot(points[i].x - points[i - 1].x, points[i].z - points[i - 1].z);
+      lengths.push(len);
+      totalLength += len;
+    }
+
+    const result = [];
+    for (let i = 1; i < points.length; i++) {
+      const p1 = points[i - 1];
+      const p2 = points[i];
+      const dir = directionForSegment(p1, p2);
+      const partLength = lengths[i - 1];
+
+      result.push({
+        ...connection,
+        x1: p1.x,
+        z1: p1.z,
+        x2: p2.x,
+        z2: p2.z,
+        direction1: dir,
+        direction2: dir,
+        length: partLength,
+        relativeLength: totalLength > 0 ? connection.relativeLength * partLength / totalLength : connection.relativeLength,
+        __mtrMapToolsSynthetic: true,
+      });
+    }
+
+    return result;
+  }
+
+  // MTR's MapDataService pushes each finished LineConnection into an array.
+  // For an edited station pair, replace that one connection with multiple clean
+  // axis/45-degree segments through virtual control points.
   Array.prototype.push = function (...items) {
-    for (let i = 0; i < items.length; i++) optimizeConnection(items[i]);
-    return nativePush.apply(this, items);
+    const transformed = [];
+
+    for (const item of items) {
+      if (looksLikeMtrLineConnection(item) && !item.__mtrMapToolsSynthetic) {
+        const setting = overrides[connectionKey(item.stationId1, item.stationId2)];
+        nativePush.apply(transformed, splitConnection(item, setting));
+      } else {
+        transformed.push(item);
+      }
+    }
+
+    return nativePush.apply(this, transformed);
   };
 
-  function addControls() {
-    if (!document.body || document.getElementById('mtr-geometry-controls')) return;
-
-    const panel = document.createElement('div');
-    panel.id = 'mtr-geometry-controls';
-    Object.assign(panel.style, {
-      position: 'fixed',
-      left: '14px',
-      bottom: '14px',
-      zIndex: '1000000',
-      width: '300px',
-      padding: '10px 11px',
-      borderRadius: '11px',
-      background: 'rgba(17,24,39,.96)',
-      color: '#fff',
-      font: '600 12px/1.25 system-ui, sans-serif',
-      boxShadow: '0 5px 20px rgba(0,0,0,.3)',
-      userSelect: 'none',
-    });
-
-    const title = document.createElement('div');
-    title.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px';
-    title.innerHTML = `<strong>Connector Geometry</strong><span style="opacity:.72">${enabled ? 'ON' : 'original'}</span>`;
-
-    const rotationRow = makeSliderRow(
-      'Rotation',
-      -45,
-      45,
-      5,
-      rotationDegrees,
-      value => `${value > 0 ? '+' : ''}${value}°`,
-    );
-
-    const smoothingRow = makeSliderRow(
-      'Smoothing',
-      0,
-      100,
-      5,
-      Math.round(smoothing * 100),
-      value => `${value}%`,
-    );
-
-    const buttons = document.createElement('div');
-    buttons.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:9px';
-
-    const left = makeButton('↶ −15°');
-    const apply = makeButton('Apply');
-    const right = makeButton('+15° ↷');
-    const straight = makeButton('Smooth 100%');
-    const original = makeButton('Original');
-    const zero = makeButton('0°');
-
-    left.onclick = () => saveAndReload(
-      clamp(Number(rotationRow.input.value) - 15, -45, 45),
-      Number(smoothingRow.input.value) / 100,
-      true,
-    );
-
-    right.onclick = () => saveAndReload(
-      clamp(Number(rotationRow.input.value) + 15, -45, 45),
-      Number(smoothingRow.input.value) / 100,
-      true,
-    );
-
-    apply.onclick = () => saveAndReload(
-      Number(rotationRow.input.value),
-      Number(smoothingRow.input.value) / 100,
-      true,
-    );
-
-    straight.onclick = () => saveAndReload(
-      Number(rotationRow.input.value),
-      1,
-      true,
-    );
-
-    zero.onclick = () => saveAndReload(
-      0,
-      Number(smoothingRow.input.value) / 100,
-      true,
-    );
-
-    original.onclick = () => {
-      localStorage.setItem(KEY_ENABLED, '0');
-      location.reload();
-    };
-
-    buttons.append(left, apply, right, zero, straight, original);
-
-    const hint = document.createElement('div');
-    hint.textContent = 'Tip: start with 0° / 100%, then try ±15° if a corridor chooses the wrong diagonal.';
-    hint.style.cssText = 'margin-top:8px;opacity:.68;font-weight:500;font-size:11px';
-
-    panel.append(title, rotationRow.row, smoothingRow.row, buttons, hint);
-    document.body.appendChild(panel);
+  async function getNetwork() {
+    const response = await fetch('/mtr/api/map/stations-and-routes?dimension=0', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`MTR API ${response.status}`);
+    const json = await response.json();
+    return json?.data ?? json;
   }
 
-  function makeSliderRow(label, min, max, step, value, format) {
-    const row = document.createElement('div');
-    row.style.cssText = 'display:grid;grid-template-columns:72px 1fr 48px;align-items:center;gap:7px;margin:6px 0';
+  function getEditablePairs(data) {
+    const stationNames = new Map((data.stations || []).map(station => [station.id, station.name || station.id]));
+    const pairs = new Map();
 
-    const text = document.createElement('span');
-    text.textContent = label;
+    for (const route of data.routes || []) {
+      if (route.hidden) continue;
+      const stops = route.stations || [];
+      for (let i = 1; i < stops.length; i++) {
+        const a = stops[i - 1];
+        const b = stops[i];
+        if (!a?.id || !b?.id || a.id === b.id) continue;
+        const key = connectionKey(a.id, b.id);
+        if (!pairs.has(key)) {
+          pairs.set(key, {
+            key,
+            id1: a.id,
+            id2: b.id,
+            name1: stationNames.get(a.id) || a.id,
+            name2: stationNames.get(b.id) || b.id,
+          });
+        }
+      }
+    }
 
-    const input = document.createElement('input');
-    input.type = 'range';
-    input.min = String(min);
-    input.max = String(max);
-    input.step = String(step);
-    input.value = String(value);
-    input.style.width = '100%';
-
-    const output = document.createElement('span');
-    output.style.cssText = 'text-align:right;font-variant-numeric:tabular-nums';
-    output.textContent = format(Number(input.value));
-    input.oninput = () => { output.textContent = format(Number(input.value)); };
-
-    row.append(text, input, output);
-    return { row, input, output };
+    return [...pairs.values()].sort((p, q) => `${p.name1} ${p.name2}`.localeCompare(`${q.name1} ${q.name2}`));
   }
 
-  function makeButton(text) {
-    const button = document.createElement('button');
-    button.textContent = text;
-    Object.assign(button.style, {
+  function button(text) {
+    const el = document.createElement('button');
+    el.textContent = text;
+    Object.assign(el.style, {
       border: '1px solid #4b5563',
       borderRadius: '7px',
-      padding: '6px 7px',
+      padding: '6px 8px',
       background: '#1f2937',
       color: '#fff',
       cursor: 'pointer',
       font: 'inherit',
     });
-    return button;
+    return el;
   }
 
-  function saveAndReload(rotation, smooth, turnOn) {
-    localStorage.setItem(KEY_ROTATION, String(clamp(rotation, -45, 45)));
-    localStorage.setItem(KEY_SMOOTHING, String(clamp(smooth, 0, 1)));
-    localStorage.setItem(KEY_ENABLED, turnOn ? '1' : '0');
-    location.reload();
+  function inputStyle(el) {
+    Object.assign(el.style, {
+      width: '100%',
+      boxSizing: 'border-box',
+      border: '1px solid #4b5563',
+      borderRadius: '7px',
+      padding: '6px 7px',
+      background: '#111827',
+      color: '#fff',
+      font: 'inherit',
+    });
+  }
+
+  async function addControls() {
+    if (!document.body || document.getElementById('mtr-real-geometry-editor')) return;
+
+    const panel = document.createElement('div');
+    panel.id = 'mtr-real-geometry-editor';
+    Object.assign(panel.style, {
+      position: 'fixed',
+      left: '14px',
+      bottom: '14px',
+      zIndex: '1000000',
+      width: '360px',
+      padding: '11px',
+      borderRadius: '11px',
+      background: 'rgba(17,24,39,.97)',
+      color: '#fff',
+      font: '600 12px/1.3 system-ui, sans-serif',
+      boxShadow: '0 5px 20px rgba(0,0,0,.3)',
+    });
+
+    panel.innerHTML = `
+      <div style="font-size:14px;margin-bottom:8px">Real Connector Geometry</div>
+      <div id="mtr-geom-loading" style="opacity:.7">Loading station connections…</div>
+    `;
+    document.body.appendChild(panel);
+
+    try {
+      const data = await getNetwork();
+      const pairs = getEditablePairs(data);
+      panel.innerHTML = '';
+
+      const title = document.createElement('div');
+      title.innerHTML = '<strong style="font-size:14px">Real Connector Geometry</strong><div style="opacity:.65;font-weight:500;margin-top:2px">Edit one station-to-station connector at a time.</div>';
+
+      const pairSelect = document.createElement('select');
+      inputStyle(pairSelect);
+      pairSelect.style.marginTop = '9px';
+      pairSelect.innerHTML = '<option value="">Choose connection…</option>' + pairs.map(pair =>
+        `<option value="${pair.key}">${escapeHtml(pair.name1)} ↔ ${escapeHtml(pair.name2)}</option>`
+      ).join('');
+
+      const shapeSelect = document.createElement('select');
+      inputStyle(shapeSelect);
+      shapeSelect.style.marginTop = '7px';
+      shapeSelect.innerHTML = `
+        <option value="NATIVE">Native MTR geometry</option>
+        <option value="HV">Horizontal → vertical</option>
+        <option value="VH">Vertical → horizontal</option>
+        <option value="DIAG_FIRST">45° diagonal → straight</option>
+        <option value="DIAG_LAST">Straight → 45° diagonal</option>
+        <option value="ABOVE">Detour above</option>
+        <option value="BELOW">Detour below</option>
+        <option value="LEFT">Detour left</option>
+        <option value="RIGHT">Detour right</option>
+      `;
+
+      const amountRow = document.createElement('div');
+      amountRow.style.cssText = 'display:grid;grid-template-columns:78px 1fr 45px;gap:7px;align-items:center;margin-top:8px';
+      const amountLabel = document.createElement('span');
+      amountLabel.textContent = 'Detour size';
+      const amount = document.createElement('input');
+      amount.type = 'range';
+      amount.min = '0.08';
+      amount.max = '0.60';
+      amount.step = '0.02';
+      amount.value = '0.22';
+      const amountValue = document.createElement('span');
+      amountValue.textContent = '22%';
+      amount.oninput = () => amountValue.textContent = `${Math.round(Number(amount.value) * 100)}%`;
+      amountRow.append(amountLabel, amount, amountValue);
+
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:9px';
+      const apply = button('Apply');
+      const clear = button('Clear this');
+      const clearAll = button('Clear all');
+      actions.append(apply, clear, clearAll);
+
+      const status = document.createElement('div');
+      status.style.cssText = 'margin-top:8px;opacity:.72;font-weight:500;min-height:15px';
+      const hint = document.createElement('div');
+      hint.style.cssText = 'margin-top:7px;opacity:.58;font-size:11px;font-weight:500';
+      hint.textContent = 'These are real virtual bend points, not direction randomization. The map reloads after applying.';
+
+      function loadCurrent() {
+        const current = overrides[pairSelect.value];
+        shapeSelect.value = current?.shape || 'NATIVE';
+        amount.value = String(current?.amount ?? 0.22);
+        amountValue.textContent = `${Math.round(Number(amount.value) * 100)}%`;
+        status.textContent = current ? `Override active: ${shapeSelect.options[shapeSelect.selectedIndex].text}` : '';
+      }
+
+      pairSelect.onchange = loadCurrent;
+
+      apply.onclick = () => {
+        const key = pairSelect.value;
+        if (!key) {
+          status.textContent = 'Choose a connection first.';
+          return;
+        }
+        if (shapeSelect.value === 'NATIVE') {
+          delete overrides[key];
+        } else {
+          overrides[key] = { shape: shapeSelect.value, amount: Number(amount.value) };
+        }
+        saveOverrides();
+        location.reload();
+      };
+
+      clear.onclick = () => {
+        const key = pairSelect.value;
+        if (!key) return;
+        delete overrides[key];
+        saveOverrides();
+        location.reload();
+      };
+
+      clearAll.onclick = () => {
+        localStorage.removeItem(KEY_OVERRIDES);
+        location.reload();
+      };
+
+      panel.append(title, pairSelect, shapeSelect, amountRow, actions, status, hint);
+    } catch (error) {
+      const loading = panel.querySelector('#mtr-geom-loading');
+      if (loading) loading.textContent = `Could not load MTR network: ${error.message}`;
+      console.error('[MTR Map Tools] Geometry editor UI failed:', error);
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;');
   }
 
   if (document.readyState === 'loading') {
@@ -259,9 +396,5 @@
     addControls();
   }
 
-  console.log('[MTR Map Tools] Connector Geometry Lab loaded', {
-    enabled,
-    rotationDegrees,
-    smoothing,
-  });
+  console.log('[MTR Map Tools] Real connector geometry editor loaded', { overrides });
 })();
