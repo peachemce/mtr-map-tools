@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         MTR Map Tools - Folityn Schematic v3.3
+// @name         MTR Map Tools - Folityn Schematic v3.4
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      3.3.0
-// @description  Corridor-first Folityn renderer: one public line, stable parallel lanes, strict 0/45/90 geometry, custom central interchange.
+// @version      3.4.0
+// @description  Poznan-style Folityn renderer: one stroke per public line, shared corridor geometry, directional stop symbols.
 // @match        http://localhost:8888/*
 // @run-at       document-idle
 // @grant        none
@@ -15,15 +15,17 @@
   'use strict';
 
   const NS = 'http://www.w3.org/2000/svg';
-  const KEY = 'folityn-schematic-v33-';
+  const KEY = 'folityn-schematic-v34-';
   const CFG = {
     targetSpacing: 82,
-    lineWidth: 5,
-    laneGap: 6.2,
+    lineWidth: 5.2,
+    laneGap: 7,
     cornerRadius: 18,
     pad: 165,
-    centerDx: 74,
-    centerDy: 82,
+    centerDx: 78,
+    centerDy: 88,
+    stopLength: 13,
+    stopWidth: 5.6,
   };
 
   const state = {
@@ -137,8 +139,6 @@
 
     const occurrences = new Map();
     const routeGroups = new Map();
-    const nodeRouteGroups = new Map();
-    const routeEndpoints = new Set();
 
     for (const raw of data.routes || []) {
       if (raw.hidden || !Array.isArray(raw.stations) || raw.stations.length < 2) continue;
@@ -155,34 +155,35 @@
           mode,
           color: Number(raw.color ?? 0),
           colorCounts: new Map(),
+          variants: [],
+          variantSigs: new Set(),
           edges: new Set(),
           nodes: new Set(),
+          baseVariant: [],
+          stopOrientations: new Map(),
         };
         routeGroups.set(groupKey, group);
       }
+
       const color = Number(raw.color ?? 0);
       group.colorCounts.set(color, (group.colorCounts.get(color) || 0) + 1);
 
-      const seq = [];
+      const ids = [];
       for (const stop of raw.stations) {
         if (!stop?.id || !Number.isFinite(Number(stop.x)) || !Number.isFinite(Number(stop.z))) continue;
         const node = ensureLogical(stop.id);
-        if (seq.at(-1)?.node !== node) seq.push({ node, x: Number(stop.x), y: Number(stop.z) });
+        if (ids.at(-1) !== node) ids.push(node);
         if (!occurrences.has(node)) occurrences.set(node, []);
         occurrences.get(node).push({ x: Number(stop.x), y: Number(stop.z) });
       }
-      if (seq.length < 2) continue;
+      if (ids.length < 2) continue;
 
-      routeEndpoints.add(seq[0].node);
-      routeEndpoints.add(seq.at(-1).node);
-      for (const item of seq) {
-        group.nodes.add(item.node);
-        if (!nodeRouteGroups.has(item.node)) nodeRouteGroups.set(item.node, new Set());
-        nodeRouteGroups.get(item.node).add(groupKey);
+      const sig = ids.join('>');
+      if (!group.variantSigs.has(sig)) {
+        group.variantSigs.add(sig);
+        group.variants.push(ids);
       }
-      for (let i = 1; i < seq.length; i++) {
-        if (seq[i - 1].node !== seq[i].node) group.edges.add(pairKey(seq[i - 1].node, seq[i].node));
-      }
+      for (const id of ids) group.nodes.add(id);
     }
 
     for (const group of routeGroups.values()) {
@@ -191,10 +192,60 @@
         if (count > bestCount) { bestColor = color; bestCount = count; }
       }
       group.color = bestColor;
+
+      group.baseVariant = [...group.variants].sort((a, b) => b.length - a.length)[0] || [];
+      const baseIndex = new Map(group.baseVariant.map((id, i) => [id, i]));
+
+      for (let i = 1; i < group.baseVariant.length; i++) {
+        group.edges.add(pairKey(group.baseVariant[i - 1], group.baseVariant[i]));
+      }
+
+      // Other direction/variants are service patterns, not alternate geometry.
+      // If two nodes already lie on the base corridor, do NOT add a shortcut edge.
+      for (const variant of group.variants) {
+        for (let i = 1; i < variant.length; i++) {
+          const a = variant[i - 1], b = variant[i];
+          const ia = baseIndex.get(a), ib = baseIndex.get(b);
+          if (ia !== undefined && ib !== undefined) continue;
+          group.edges.add(pairKey(a, b));
+        }
+      }
+
+      // Work out which direction(s) serve each stop.
+      for (const variant of group.variants) {
+        let orientation = 1;
+        let firstIndex = null;
+        for (const id of variant) {
+          const bi = baseIndex.get(id);
+          if (bi === undefined) continue;
+          if (firstIndex === null) firstIndex = bi;
+          else if (bi !== firstIndex) {
+            orientation = bi > firstIndex ? 1 : -1;
+            break;
+          }
+        }
+        for (const id of variant) {
+          if (!group.stopOrientations.has(id)) group.stopOrientations.set(id, new Set());
+          group.stopOrientations.get(id).add(orientation);
+        }
+      }
     }
 
     const edges = new Map();
+    const nodeRouteGroups = new Map();
+    const routeEndpoints = new Set();
+
     for (const group of routeGroups.values()) {
+      for (const id of group.nodes) {
+        if (!nodeRouteGroups.has(id)) nodeRouteGroups.set(id, new Set());
+        nodeRouteGroups.get(id).add(group.id);
+      }
+      for (const variant of group.variants) {
+        if (variant.length) {
+          routeEndpoints.add(variant[0]);
+          routeEndpoints.add(variant.at(-1));
+        }
+      }
       for (const key of group.edges) {
         let edge = edges.get(key);
         if (!edge) {
@@ -279,7 +330,8 @@
     let total = 0;
     for (let i = 1; i < points.length; i++) {
       const len = dist(points[i - 1], points[i]);
-      lens.push(len); total += len;
+      lens.push(len);
+      total += len;
     }
     if (!total) return { ...points[0] };
     let target = clamp(fraction, 0, 1) * total;
@@ -335,8 +387,8 @@
 
     const byName = new Map([...model.stationMeta.values()].map(s => [norm(s.name), s.id]));
 
-    const rogowskaNames = ['Rogowska Centrum Miejskie', 'Witkowskiego', 'Rogowska/Dąbka', 'Rogowska'];
-    const rog = rogowskaNames.map(n => byName.get(norm(n))).filter(id => id && pos.has(id));
+    const rogNames = ['Rogowska Centrum Miejskie', 'Witkowskiego', 'Rogowska/Dąbka', 'Rogowska'];
+    const rog = rogNames.map(n => byName.get(norm(n))).filter(id => id && pos.has(id));
     if (rog.length >= 3) {
       const firstId = rog[0], lastId = rog.at(-1);
       const first = { ...pos.get(firstId) };
@@ -358,14 +410,17 @@
     const rcm = byName.get(norm('Rogowska Centrum Miejskie'));
     if (centralny && larcho && rcm && pos.has(centralny) && pos.has(larcho) && pos.has(rcm)) {
       const base = pos.get(centralny);
-      const old = new Map([[centralny, { ...pos.get(centralny) }], [larcho, { ...pos.get(larcho) }], [rcm, { ...pos.get(rcm) }]]);
+      const old = new Map([
+        [centralny, { ...pos.get(centralny) }],
+        [larcho, { ...pos.get(larcho) }],
+        [rcm, { ...pos.get(rcm) }],
+      ]);
       const target = new Map([
         [centralny, { x: base.x, y: base.y - CFG.centerDy * 0.55 }],
         [larcho, { x: base.x - CFG.centerDx, y: base.y + CFG.centerDy * 0.45 }],
         [rcm, { x: base.x + CFG.centerDx, y: base.y + CFG.centerDy * 0.45 }],
       ]);
       for (const [id, p] of target) pos.set(id, p);
-
       for (const hub of [centralny, larcho, rcm]) {
         const before = old.get(hub), after = target.get(hub);
         const dx = after.x - before.x, dy = after.y - before.y;
@@ -381,31 +436,6 @@
     return pos;
   }
 
-  function offsetPolyline(points, offset) {
-    if (Math.abs(offset) < 0.001 || points.length < 2) return points.map(p => ({ ...p }));
-    const normals = [];
-    for (let i = 1; i < points.length; i++) {
-      const dx = points[i].x - points[i - 1].x, dy = points[i].y - points[i - 1].y;
-      const len = Math.max(0.001, Math.hypot(dx, dy));
-      normals.push({ x: -dy / len, y: dx / len });
-    }
-    return points.map((p, i) => {
-      if (i === 0) return { x: p.x + normals[0].x * offset, y: p.y + normals[0].y * offset };
-      if (i === points.length - 1) {
-        const n = normals.at(-1);
-        return { x: p.x + n.x * offset, y: p.y + n.y * offset };
-      }
-      const n1 = normals[i - 1], n2 = normals[i];
-      let mx = n1.x + n2.x, my = n1.y + n2.y;
-      const ml = Math.hypot(mx, my);
-      if (ml < 0.001) return { x: p.x + n2.x * offset, y: p.y + n2.y * offset };
-      mx /= ml; my /= ml;
-      const dot = Math.max(0.5, mx * n2.x + my * n2.y);
-      const miter = offset / dot;
-      return { x: p.x + mx * miter, y: p.y + my * miter };
-    });
-  }
-
   function roundedPath(points, radius = CFG.cornerRadius) {
     if (points.length < 2) return '';
     if (points.length === 2) return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
@@ -414,15 +444,17 @@
       const prev = points[i - 1], cur = points[i], next = points[i + 1];
       const l1 = dist(prev, cur), l2 = dist(cur, next);
       const r = Math.min(radius, l1 * 0.38, l2 * 0.38);
-      if (r < 0.5) { d += ` L ${cur.x} ${cur.y}`; continue; }
+      if (r < 0.5) {
+        d += ` L ${cur.x} ${cur.y}`;
+        continue;
+      }
       const u1 = { x: (cur.x - prev.x) / l1, y: (cur.y - prev.y) / l1 };
       const u2 = { x: (next.x - cur.x) / l2, y: (next.y - cur.y) / l2 };
       const pIn = { x: cur.x - u1.x * r, y: cur.y - u1.y * r };
       const pOut = { x: cur.x + u2.x * r, y: cur.y + u2.y * r };
       d += ` L ${pIn.x} ${pIn.y} Q ${cur.x} ${cur.y} ${pOut.x} ${pOut.y}`;
     }
-    const last = points.at(-1);
-    return d + ` L ${last.x} ${last.y}`;
+    return d + ` L ${points.at(-1).x} ${points.at(-1).y}`;
   }
 
   function visibleRouteIds(edge, model) {
@@ -431,22 +463,133 @@
       .sort((a, b) => (model.routeRank.get(a) ?? 0) - (model.routeRank.get(b) ?? 0));
   }
 
+  function edgeGeometry(edge, positions) {
+    const a = positions.get(edge.a), b = positions.get(edge.b);
+    return a && b ? octilinearPoints(a, b) : [];
+  }
+
+  function edgeLaneInfo(edge, routeId, model) {
+    const shared = visibleRouteIds(edge, model);
+    const index = shared.indexOf(routeId);
+    if (index < 0) return null;
+    return { offset: (index - (shared.length - 1) / 2) * CFG.laneGap };
+  }
+
+  function offsetEdge(points, offset) {
+    if (points.length < 2 || Math.abs(offset) < 0.001) return points.map(p => ({ ...p }));
+    const out = [];
+    for (let i = 0; i < points.length; i++) {
+      let dx, dy;
+      if (i === points.length - 1) {
+        dx = points[i].x - points[i - 1].x;
+        dy = points[i].y - points[i - 1].y;
+      } else {
+        dx = points[i + 1].x - points[i].x;
+        dy = points[i + 1].y - points[i].y;
+      }
+      const len = Math.max(0.001, Math.hypot(dx, dy));
+      const nx = -dy / len, ny = dx / len;
+      out.push({ x: points[i].x + nx * offset, y: points[i].y + ny * offset });
+    }
+    return out;
+  }
+
   function routePathData(group, model, positions) {
     const chunks = [];
     for (const key of group.edges) {
       const edge = model.edges.get(key);
       if (!edge) continue;
-      const a = positions.get(edge.a), b = positions.get(edge.b);
-      if (!a || !b) continue;
-      const shared = visibleRouteIds(edge, model);
-      const idx = shared.indexOf(group.id);
-      if (idx < 0) continue;
-      const offset = (idx - (shared.length - 1) / 2) * CFG.laneGap;
-      const center = octilinearPoints(a, b);
-      const line = offsetPolyline(center, offset);
-      chunks.push(roundedPath(line));
+      const lane = edgeLaneInfo(edge, group.id, model);
+      if (!lane) continue;
+      const center = edgeGeometry(edge, positions);
+      if (center.length < 2) continue;
+      chunks.push(roundedPath(offsetEdge(center, lane.offset)));
     }
     return chunks.join(' ');
+  }
+
+  function stationTangentForGroup(nodeId, group, model, positions) {
+    for (const key of group.edges) {
+      const edge = model.edges.get(key);
+      if (!edge || (edge.a !== nodeId && edge.b !== nodeId)) continue;
+      const pts = edgeGeometry(edge, positions);
+      if (pts.length < 2) continue;
+      if (edge.a === nodeId) {
+        return { dx: pts[1].x - pts[0].x, dy: pts[1].y - pts[0].y, edge };
+      }
+      const n = pts.length;
+      return { dx: pts[n - 2].x - pts[n - 1].x, dy: pts[n - 2].y - pts[n - 1].y, edge };
+    }
+    return null;
+  }
+
+  function lanePointAtStation(nodeId, group, model, positions) {
+    const p = positions.get(nodeId);
+    const tangent = stationTangentForGroup(nodeId, group, model, positions);
+    if (!p || !tangent) return null;
+    const lane = edgeLaneInfo(tangent.edge, group.id, model);
+    if (!lane) return null;
+    const len = Math.max(0.001, Math.hypot(tangent.dx, tangent.dy));
+    const nx = -tangent.dy / len, ny = tangent.dx / len;
+    return {
+      x: p.x + nx * lane.offset,
+      y: p.y + ny * lane.offset,
+      angle: Math.atan2(tangent.dy, tangent.dx) * 180 / Math.PI,
+      nx, ny,
+    };
+  }
+
+  function stopServiceKind(group, nodeId) {
+    const dirs = group.stopOrientations.get(nodeId);
+    if (!dirs || !dirs.size) return 'none';
+    if (dirs.has(1) && dirs.has(-1)) return 'both';
+    if (group.variants.length >= 2 && dirs.size === 1) return dirs.has(-1) ? 'minus' : 'plus';
+    return 'both';
+  }
+
+  function drawRouteStop(layer, group, nodeId, bg, fg, model, positions) {
+    const service = stopServiceKind(group, nodeId);
+    if (service === 'none') return;
+    const lp = lanePointAtStation(nodeId, group, model, positions);
+    if (!lp) return;
+
+    const full = service === 'both';
+    const length = full ? CFG.stopLength : CFG.stopLength * 0.62;
+    const side = service === 'minus' ? -1 : 1;
+    const cx = full ? lp.x : lp.x + lp.nx * side * CFG.stopLength * 0.24;
+    const cy = full ? lp.y : lp.y + lp.ny * side * CFG.stopLength * 0.24;
+
+    layer.appendChild(svgEl('rect', {
+      x: cx - CFG.stopWidth / 2,
+      y: cy - length / 2,
+      width: CFG.stopWidth,
+      height: length,
+      rx: CFG.stopWidth / 2,
+      ry: CFG.stopWidth / 2,
+      fill: bg,
+      stroke: fg,
+      'stroke-width': 1.6,
+      'vector-effect': 'non-scaling-stroke',
+      transform: `rotate(${lp.angle} ${cx} ${cy})`,
+    }));
+  }
+
+  function drawCentralComplex(layer, bg, fg) {
+    const byName = new Map([...state.model.stationMeta.values()].map(s => [norm(s.name), s.id]));
+    const c = state.positions.get(byName.get(norm('Folityn Centralny')));
+    const l = state.positions.get(byName.get(norm('Rondo Larcho')));
+    const r = state.positions.get(byName.get(norm('Rogowska Centrum Miejskie')));
+    if (!c || !l || !r) return;
+    layer.appendChild(svgEl('polygon', {
+      points: `${c.x},${c.y} ${r.x},${r.y} ${l.x},${l.y}`,
+      fill: bg,
+      'fill-opacity': 0.88,
+      stroke: fg,
+      'stroke-opacity': 0.38,
+      'stroke-width': 1.35,
+      'stroke-dasharray': '5 5',
+      'vector-effect': 'non-scaling-stroke',
+    }));
   }
 
   function setOriginalVisible(show) {
@@ -461,7 +604,12 @@
     const vals = [...positions.values()];
     const minX = Math.min(...vals.map(p => p.x)), maxX = Math.max(...vals.map(p => p.x));
     const minY = Math.min(...vals.map(p => p.y)), maxY = Math.max(...vals.map(p => p.y));
-    return { x: minX - CFG.pad, y: minY - CFG.pad, w: Math.max(500, maxX - minX + CFG.pad * 2), h: Math.max(360, maxY - minY + CFG.pad * 2) };
+    return {
+      x: minX - CFG.pad,
+      y: minY - CFG.pad,
+      w: Math.max(500, maxX - minX + CFG.pad * 2),
+      h: Math.max(360, maxY - minY + CFG.pad * 2),
+    };
   }
 
   function applyView() {
@@ -471,9 +619,8 @@
   function installPanZoom(svg) {
     svg.style.cursor = 'grab';
     svg.style.userSelect = 'none';
-    svg.style.webkitUserSelect = 'none';
-
     const endDrag = () => { state.drag = null; svg.style.cursor = 'grab'; };
+
     svg.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
       state.drag = { x: e.clientX, y: e.clientY, viewX: state.view.x, viewY: state.view.y };
@@ -483,7 +630,10 @@
     }, true);
 
     window.addEventListener('mousemove', e => {
-      if (!state.drag || (e.buttons & 1) !== 1) { if (state.drag && (e.buttons & 1) !== 1) endDrag(); return; }
+      if (!state.drag || (e.buttons & 1) !== 1) {
+        if (state.drag && (e.buttons & 1) !== 1) endDrag();
+        return;
+      }
       const rect = svg.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
       state.view.x = state.drag.viewX - (e.clientX - state.drag.x) / rect.width * state.view.w;
@@ -491,48 +641,35 @@
       applyView();
       e.preventDefault();
     }, true);
+
     window.addEventListener('mouseup', endDrag, true);
     window.addEventListener('blur', endDrag, true);
 
     svg.addEventListener('wheel', e => {
-      e.preventDefault(); e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
       const rect = svg.getBoundingClientRect();
       const mx = state.view.x + (e.clientX - rect.left) / rect.width * state.view.w;
       const my = state.view.y + (e.clientY - rect.top) / rect.height * state.view.h;
       const factor = e.deltaY > 0 ? 1.12 : 0.89;
       state.view.x = mx + (state.view.x - mx) * factor;
       state.view.y = my + (state.view.y - my) * factor;
-      state.view.w *= factor; state.view.h *= factor;
+      state.view.w *= factor;
+      state.view.h *= factor;
       applyView();
     }, { passive: false, capture: true });
 
-    svg.addEventListener('dblclick', e => { e.preventDefault(); state.view = { ...state.fitView }; applyView(); });
-  }
-
-  function drawCentralComplex(layer, bg, fg) {
-    const byName = new Map([...state.model.stationMeta.values()].map(s => [norm(s.name), s.id]));
-    const c = state.positions.get(byName.get(norm('Folityn Centralny')));
-    const l = state.positions.get(byName.get(norm('Rondo Larcho')));
-    const r = state.positions.get(byName.get(norm('Rogowska Centrum Miejskie')));
-    if (!c || !l || !r) return;
-
-    const hull = `${c.x},${c.y} ${r.x},${r.y} ${l.x},${l.y}`;
-    layer.appendChild(svgEl('polygon', {
-      points: hull,
-      fill: bg,
-      'fill-opacity': 0.88,
-      stroke: fg,
-      'stroke-opacity': 0.45,
-      'stroke-width': 1.4,
-      'stroke-dasharray': '5 5',
-      'vector-effect': 'non-scaling-stroke',
-    }));
+    svg.addEventListener('dblclick', e => {
+      e.preventDefault();
+      state.view = { ...state.fitView };
+      applyView();
+    });
   }
 
   function draw() {
     if (!state.layers) return;
-    const { complexLayer, routeLayer, transferLayer, stationLayer, labelLayer } = state.layers;
-    complexLayer.replaceChildren(); routeLayer.replaceChildren(); transferLayer.replaceChildren(); stationLayer.replaceChildren(); labelLayer.replaceChildren();
+    const { complexLayer, routeLayer, transferLayer, stopLayer, stationLayer, labelLayer } = state.layers;
+    for (const layer of [complexLayer, routeLayer, transferLayer, stopLayer, stationLayer, labelLayer]) layer.replaceChildren();
 
     const bg = state.dark ? '#101827' : '#f6f8fb';
     const fg = state.dark ? '#e6edf7' : '#172033';
@@ -547,11 +684,15 @@
       const d = routePathData(group, state.model, state.positions);
       if (!d) continue;
       routeLayer.appendChild(svgEl('path', {
-        d, fill: 'none', stroke: colorHex(group.color),
+        d,
+        fill: 'none',
+        stroke: colorHex(group.color),
         'stroke-width': CFG.lineWidth,
-        'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round',
         'vector-effect': 'non-scaling-stroke',
-        'data-mode': group.mode, 'data-route': group.label,
+        'data-mode': group.mode,
+        'data-route': group.label,
       }));
     }
 
@@ -561,13 +702,35 @@
         const a = state.positions.get(aId), b = state.positions.get(bId);
         if (!a || !b) continue;
         transferLayer.appendChild(svgEl('path', {
-          d: roundedPath(octilinearPoints(a, b), 10), fill: 'none', stroke: transferColor,
-          'stroke-width': 2.1, 'stroke-dasharray': '7 6', 'vector-effect': 'non-scaling-stroke',
+          d: roundedPath(octilinearPoints(a, b), 10),
+          fill: 'none',
+          stroke: transferColor,
+          'stroke-width': 2.1,
+          'stroke-dasharray': '7 6',
+          'vector-effect': 'non-scaling-stroke',
         }));
       }
     }
 
-    const centralNames = new Set([norm('Folityn Centralny'), norm('Rondo Larcho'), norm('Rogowska Centrum Miejskie')]);
+    const centralNames = new Set([
+      norm('Folityn Centralny'),
+      norm('Rondo Larcho'),
+      norm('Rogowska Centrum Miejskie'),
+    ]);
+
+    for (const group of state.model.groups) {
+      if (!state.visible.has(group.mode)) continue;
+      for (const nodeId of group.nodes) {
+        const meta = state.model.stationMeta.get(nodeId);
+        const routeCount = [...(state.model.nodeRouteGroups.get(nodeId) || [])]
+          .filter(rid => state.visible.has(state.model.routeGroups.get(rid)?.mode)).length;
+        const degree = state.model.adjacency.get(nodeId)?.length || 0;
+        const isCentral = centralNames.has(norm(meta?.name));
+        const major = isCentral || routeCount >= 4 || degree >= 3;
+        if (!major) drawRouteStop(stopLayer, group, nodeId, bg, fg, state.model, state.positions);
+      }
+    }
+
     for (const [id, p] of state.positions) {
       const routeIds = [...(state.model.nodeRouteGroups.get(id) || [])]
         .filter(rid => state.visible.has(state.model.routeGroups.get(rid)?.mode));
@@ -576,36 +739,74 @@
       const count = routeIds.length;
       const degree = state.model.adjacency.get(id)?.length || 0;
       const isCentral = centralNames.has(norm(meta?.name));
-      const r = isCentral ? 10.5 : 3.8 + Math.min(8.2, Math.log2(count + 1) * 2.2);
       const major = isCentral || count >= 4 || degree >= 3;
-      const marker = major
-        ? svgEl('rect', { x: p.x - r * 1.55, y: p.y - r, width: r * 3.1, height: r * 2, rx: r, ry: r, fill: bg, stroke: fg, 'stroke-width': isCentral ? 2.8 : 2.2, 'vector-effect': 'non-scaling-stroke' })
-        : svgEl('circle', { cx: p.x, cy: p.y, r, fill: bg, stroke: fg, 'stroke-width': 1.8, 'vector-effect': 'non-scaling-stroke' });
-      const title = svgEl('title'); title.textContent = `${meta?.name || id} · ${count} visible route${count === 1 ? '' : 's'}`;
-      marker.appendChild(title); stationLayer.appendChild(marker);
+      if (!major) continue;
+      const r = isCentral ? 10.5 : 7 + Math.min(7, Math.log2(count + 1) * 1.6);
+      stationLayer.appendChild(svgEl('rect', {
+        x: p.x - r * 1.55,
+        y: p.y - r,
+        width: r * 3.1,
+        height: r * 2,
+        rx: r,
+        ry: r,
+        fill: bg,
+        stroke: fg,
+        'stroke-width': isCentral ? 2.8 : 2.2,
+        'vector-effect': 'non-scaling-stroke',
+      }));
+    }
 
-      const showLabel = state.labels === 'all' || (state.labels === 'key' && (major || count >= 2));
-      if (showLabel && meta?.name) {
-        const text = svgEl('text', {
-          x: p.x + r + 5, y: p.y - r - 3, fill: fg,
-          'font-size': isCentral ? 12.5 : (major ? 11 : 9.5), 'font-family': 'system-ui, sans-serif',
-          'font-weight': isCentral ? 800 : (major ? 700 : 550), 'paint-order': 'stroke',
-          stroke: halo, 'stroke-width': 3.8, 'stroke-linejoin': 'round', 'vector-effect': 'non-scaling-stroke',
-        });
-        text.textContent = meta.name; labelLayer.appendChild(text);
-      }
+    for (const [id, p] of state.positions) {
+      const routeIds = [...(state.model.nodeRouteGroups.get(id) || [])]
+        .filter(rid => state.visible.has(state.model.routeGroups.get(rid)?.mode));
+      if (!routeIds.length) continue;
+      const meta = state.model.stationMeta.get(id);
+      if (!meta?.name) continue;
+      const degree = state.model.adjacency.get(id)?.length || 0;
+      const isCentral = centralNames.has(norm(meta.name));
+      const major = isCentral || routeIds.length >= 4 || degree >= 3;
+      const show = state.labels === 'all' || (state.labels === 'key' && (major || routeIds.length >= 2));
+      if (!show) continue;
+      const text = svgEl('text', {
+        x: p.x + (major ? 18 : 9),
+        y: p.y - (major ? 12 : 7),
+        fill: fg,
+        'font-size': isCentral ? 12.5 : (major ? 11 : 9.5),
+        'font-family': 'system-ui, sans-serif',
+        'font-weight': isCentral ? 800 : (major ? 700 : 550),
+        'paint-order': 'stroke',
+        stroke: halo,
+        'stroke-width': 3.8,
+        'stroke-linejoin': 'round',
+        'vector-effect': 'non-scaling-stroke',
+      });
+      text.textContent = meta.name;
+      labelLayer.appendChild(text);
     }
   }
 
   function button(text) {
-    const b = document.createElement('button'); b.type = 'button'; b.textContent = text;
-    Object.assign(b.style, { border: '1px solid #4b5563', borderRadius: '7px', padding: '6px 8px', background: '#1f2937', color: '#fff', cursor: 'pointer', font: 'inherit' });
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = text;
+    Object.assign(b.style, {
+      border: '1px solid #4b5563',
+      borderRadius: '7px',
+      padding: '6px 8px',
+      background: '#1f2937',
+      color: '#fff',
+      cursor: 'pointer',
+      font: 'inherit',
+    });
     return b;
   }
 
   function modeCheckbox(label, mode) {
-    const wrap = document.createElement('label'); wrap.style.cssText = 'display:flex;align-items:center;gap:6px;min-height:26px;cursor:pointer';
-    const input = document.createElement('input'); input.type = 'checkbox'; input.checked = state.visible.has(mode);
+    const wrap = document.createElement('label');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:6px;min-height:26px;cursor:pointer';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = state.visible.has(mode);
     input.addEventListener('change', () => {
       input.checked ? state.visible.add(mode) : state.visible.delete(mode);
       localStorage.setItem(KEY + 'modes', JSON.stringify([...state.visible]));
@@ -616,55 +817,154 @@
   }
 
   function installControls() {
-    document.getElementById('folityn-v33-controls')?.remove();
-    const panel = document.createElement('div'); panel.id = 'folityn-v33-controls';
-    Object.assign(panel.style, { position: 'fixed', left: '14px', bottom: '14px', zIndex: '1000000', width: '278px', padding: '11px', borderRadius: '11px', background: 'rgba(17,24,39,.97)', color: '#fff', boxShadow: '0 6px 22px rgba(0,0,0,.35)', font: '600 12px/1.35 system-ui,sans-serif' });
-    const title = document.createElement('div');
-    title.innerHTML = '<strong style="font-size:14px">Folityn schematic v3.3</strong><div style="opacity:.62;font-weight:500;margin-top:2px">shared corridor = shared geometry · one public line</div>';
-    const modes = document.createElement('div'); modes.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:9px';
-    modes.append(modeCheckbox('Light Rail', 'light_rail'), modeCheckbox('Rail', 'rail'), modeCheckbox('High Speed', 'high_speed'));
+    document.getElementById('folityn-v34-controls')?.remove();
+    const panel = document.createElement('div');
+    panel.id = 'folityn-v34-controls';
+    Object.assign(panel.style, {
+      position: 'fixed',
+      left: '14px',
+      bottom: '14px',
+      zIndex: '1000000',
+      width: '286px',
+      padding: '11px',
+      borderRadius: '11px',
+      background: 'rgba(17,24,39,.97)',
+      color: '#fff',
+      boxShadow: '0 6px 22px rgba(0,0,0,.35)',
+      font: '600 12px/1.35 system-ui,sans-serif',
+    });
 
-    const opts = document.createElement('div'); opts.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:8px';
-    const darkLabel = document.createElement('label'); darkLabel.style.cssText = 'display:flex;gap:6px;align-items:center';
-    const dark = document.createElement('input'); dark.type = 'checkbox'; dark.checked = state.dark;
-    dark.addEventListener('change', () => { state.dark = dark.checked; localStorage.setItem(KEY + 'dark', state.dark ? '1' : '0'); draw(); });
+    const title = document.createElement('div');
+    title.innerHTML = '<strong style="font-size:14px">Folityn schematic v3.4</strong><div style="opacity:.62;font-weight:500;margin-top:2px">Poznań-style: one route stroke · directional stops only</div>';
+
+    const modes = document.createElement('div');
+    modes.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:9px';
+    modes.append(
+      modeCheckbox('Light Rail', 'light_rail'),
+      modeCheckbox('Rail', 'rail'),
+      modeCheckbox('High Speed', 'high_speed')
+    );
+
+    const opts = document.createElement('div');
+    opts.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:8px';
+
+    const darkLabel = document.createElement('label');
+    darkLabel.style.cssText = 'display:flex;gap:6px;align-items:center';
+    const dark = document.createElement('input');
+    dark.type = 'checkbox';
+    dark.checked = state.dark;
+    dark.addEventListener('change', () => {
+      state.dark = dark.checked;
+      localStorage.setItem(KEY + 'dark', state.dark ? '1' : '0');
+      draw();
+    });
     darkLabel.append(dark, document.createTextNode('Dark'));
-    const transferLabel = document.createElement('label'); transferLabel.style.cssText = 'display:flex;gap:6px;align-items:center';
-    const transfers = document.createElement('input'); transfers.type = 'checkbox'; transfers.checked = state.transfers;
-    transfers.addEventListener('change', () => { state.transfers = transfers.checked; localStorage.setItem(KEY + 'transfers', state.transfers ? '1' : '0'); draw(); });
+
+    const transferLabel = document.createElement('label');
+    transferLabel.style.cssText = 'display:flex;gap:6px;align-items:center';
+    const transfers = document.createElement('input');
+    transfers.type = 'checkbox';
+    transfers.checked = state.transfers;
+    transfers.addEventListener('change', () => {
+      state.transfers = transfers.checked;
+      localStorage.setItem(KEY + 'transfers', state.transfers ? '1' : '0');
+      draw();
+    });
     transferLabel.append(transfers, document.createTextNode('Transfers'));
     opts.append(darkLabel, transferLabel);
 
     const labels = document.createElement('select');
     labels.innerHTML = '<option value="key">Key labels</option><option value="all">All labels</option><option value="none">No labels</option>';
     labels.value = state.labels;
-    Object.assign(labels.style, { width: '100%', marginTop: '8px', padding: '6px', borderRadius: '7px', border: '1px solid #4b5563', background: '#1f2937', color: '#fff' });
-    labels.addEventListener('change', () => { state.labels = labels.value; localStorage.setItem(KEY + 'labels', state.labels); draw(); });
+    Object.assign(labels.style, {
+      width: '100%',
+      marginTop: '8px',
+      padding: '6px',
+      borderRadius: '7px',
+      border: '1px solid #4b5563',
+      background: '#1f2937',
+      color: '#fff',
+    });
+    labels.addEventListener('change', () => {
+      state.labels = labels.value;
+      localStorage.setItem(KEY + 'labels', state.labels);
+      draw();
+    });
 
-    const row = document.createElement('div'); row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 70px;gap:6px;margin-top:8px';
-    const schematic = button('Schematic'), original = button('Original'), fit = button('Fit');
-    schematic.addEventListener('click', () => { state.enabled = true; localStorage.setItem(KEY + 'enabled', '1'); setOriginalVisible(false); });
-    original.addEventListener('click', () => { state.enabled = false; localStorage.setItem(KEY + 'enabled', '0'); setOriginalVisible(true); });
-    fit.addEventListener('click', () => { state.view = { ...state.fitView }; applyView(); });
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 70px;gap:6px;margin-top:8px';
+    const schematic = button('Schematic');
+    const original = button('Original');
+    const fit = button('Fit');
+    schematic.addEventListener('click', () => {
+      state.enabled = true;
+      localStorage.setItem(KEY + 'enabled', '1');
+      setOriginalVisible(false);
+    });
+    original.addEventListener('click', () => {
+      state.enabled = false;
+      localStorage.setItem(KEY + 'enabled', '0');
+      setOriginalVisible(true);
+    });
+    fit.addEventListener('click', () => {
+      state.view = { ...state.fitView };
+      applyView();
+    });
     row.append(schematic, original, fit);
 
-    const note = document.createElement('div'); note.style.cssText = 'opacity:.58;font-weight:500;font-size:10.5px;margin-top:7px';
-    note.textContent = 'Hold left mouse to pan · wheel zoom · straight shared corridors never braid';
-    panel.append(title, modes, opts, labels, row, note); document.body.appendChild(panel);
+    const note = document.createElement('div');
+    note.style.cssText = 'opacity:.58;font-weight:500;font-size:10.5px;margin-top:7px';
+    note.textContent = 'One public line = one map line · half stop = one direction only · hold left mouse to pan';
+
+    panel.append(title, modes, opts, labels, row, note);
+    document.body.appendChild(panel);
   }
 
   function createOverlay() {
-    ['folityn-v3-overlay','folityn-v31-overlay','folityn-v32-overlay','folityn-v33-overlay','folityn-v3-controls','folityn-v31-controls','folityn-v32-controls','folityn-v33-controls'].forEach(id => document.getElementById(id)?.remove());
+    [
+      'folityn-v3-overlay','folityn-v31-overlay','folityn-v32-overlay','folityn-v33-overlay','folityn-v34-overlay',
+      'folityn-v3-controls','folityn-v31-controls','folityn-v32-controls','folityn-v33-controls','folityn-v34-controls'
+    ].forEach(id => document.getElementById(id)?.remove());
+
     state.wrapper.style.position = 'relative';
-    const overlay = document.createElement('div'); overlay.id = 'folityn-v33-overlay';
-    Object.assign(overlay.style, { position: 'absolute', inset: '0', zIndex: '30', overflow: 'hidden', pointerEvents: 'auto' });
-    const svg = svgEl('svg', { width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet' });
-    svg.style.display = 'block'; svg.style.pointerEvents = 'all';
-    const complexLayer = svgEl('g'), routeLayer = svgEl('g'), transferLayer = svgEl('g'), stationLayer = svgEl('g'), labelLayer = svgEl('g');
-    svg.append(complexLayer, routeLayer, transferLayer, stationLayer, labelLayer); overlay.appendChild(svg); state.wrapper.appendChild(overlay);
-    state.overlay = overlay; state.svg = svg; state.layers = { complexLayer, routeLayer, transferLayer, stationLayer, labelLayer };
-    state.fitView = fitForPositions(state.positions); state.view = { ...state.fitView };
-    installPanZoom(svg); installControls(); draw(); setOriginalVisible(!state.enabled);
+    const overlay = document.createElement('div');
+    overlay.id = 'folityn-v34-overlay';
+    Object.assign(overlay.style, {
+      position: 'absolute',
+      inset: '0',
+      zIndex: '30',
+      overflow: 'hidden',
+      pointerEvents: 'auto',
+    });
+
+    const svg = svgEl('svg', {
+      width: '100%',
+      height: '100%',
+      preserveAspectRatio: 'xMidYMid meet',
+    });
+    svg.style.display = 'block';
+    svg.style.pointerEvents = 'all';
+
+    const complexLayer = svgEl('g');
+    const routeLayer = svgEl('g');
+    const transferLayer = svgEl('g');
+    const stopLayer = svgEl('g');
+    const stationLayer = svgEl('g');
+    const labelLayer = svgEl('g');
+    svg.append(complexLayer, routeLayer, transferLayer, stopLayer, stationLayer, labelLayer);
+    overlay.appendChild(svg);
+    state.wrapper.appendChild(overlay);
+
+    state.overlay = overlay;
+    state.svg = svg;
+    state.layers = { complexLayer, routeLayer, transferLayer, stopLayer, stationLayer, labelLayer };
+    state.fitView = fitForPositions(state.positions);
+    state.view = { ...state.fitView };
+
+    installPanZoom(svg);
+    installControls();
+    draw();
+    setOriginalVisible(!state.enabled);
   }
 
   async function main() {
@@ -674,14 +974,14 @@
       state.model = buildModel(data);
       state.positions = simplifyCorridors(state.model);
       createOverlay();
-      console.log('[MTR Map Tools] Folityn schematic v3.3 loaded', {
+      console.log('[MTR Map Tools] Folityn schematic v3.4 loaded', {
         publicRoutes: state.model.groups.length,
         physicalEdges: state.model.edges.size,
         stations: state.positions.size,
         modes: [...new Set(state.model.groups.map(r => r.mode))],
       });
     } catch (error) {
-      console.error('[MTR Map Tools] Folityn schematic v3.3 failed:', error);
+      console.error('[MTR Map Tools] Folityn schematic v3.4 failed:', error);
     }
   }
 
