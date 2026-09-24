@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         MTR Map Tools - Tram / Bus Filters + Split Schematic Corridors
+// @name         MTR Map Tools - Tram / Bus Filters + Shared Schematic Corridors
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      11.2.0
-// @description  Native MTR map with tram/bus sub-filters and separate schematic simplification graphs for trams and buses.
+// @version      11.3.0
+// @description  Native MTR map with tram/bus filters, schematic simplification, and corridor inheritance between nearby routes.
 // @match        http://localhost:8888/*
 // @match        http://127.0.0.1:8888/*
 // @run-at       document-start
@@ -40,14 +40,17 @@ function buildGraph(routes){
   for(const r of routes){
     const s=routeStops(r).filter(x=>stopId(x)&&point(x));
     for(const st of s){const id=stopId(st),q=point(st);node(id);if(!occ.has(id))occ.set(id,[]);occ.get(id).push(q)}
-    for(let i=1;i<s.length;i++){const a=stopId(s[i-1]),b=stopId(s[i]);if(!a||!b||a===b)continue;node(a);node(b);graph.get(a).add(b);graph.get(b).add(a)}
+    for(let i=1;i<s.length;i++){
+      const a=stopId(s[i-1]),b=stopId(s[i]);if(!a||!b||a===b)continue;
+      node(a);node(b);graph.get(a).add(b);graph.get(b).add(a);
+    }
   }
   for(const[id,ps]of occ)coords.set(id,{x:median(ps.map(p=>p.x)),z:median(ps.map(p=>p.z))});
   return{graph,coords};
 }
-
 function addProposal(map,id,q){if(!map.has(id))map.set(id,[]);map.get(id).push(q)}
 function finalize(proposals){const out=new Map();for(const[id,ps]of proposals)out.set(id,{x:median(ps.map(p=>p.x)),z:median(ps.map(p=>p.z))});return out}
+function withOverrides(coords,...maps){const out=new Map(coords);for(const m of maps)for(const[id,q]of m||[])out.set(id,q);return out}
 
 function tramChainProposal(ids,graph,coords,proposals){
   if(ids.length<3)return;
@@ -57,9 +60,13 @@ function tramChainProposal(ids,graph,coords,proposals){
   if(angleDiff(Math.atan2(B.z-A.z,B.x-A.x),snap)>rad(18))return;
   let ux=Math.cos(snap),uz=Math.sin(snap),proj=(B.x-A.x)*ux+(B.z-A.z)*uz;if(proj<0)proj=-proj;if(proj<40)return;
   const vx=B.x-A.x,vz=B.z-A.z,vv=vx*vx+vz*vz;let maxPerp=0;
-  for(const id of ids.slice(1,-1)){const q=coords.get(id);if(!q)continue;const t=vv?((q.x-A.x)*vx+(q.z-A.z)*vz)/vv:0;maxPerp=Math.max(maxPerp,dist(q,{x:A.x+vx*t,z:A.z+vz*t}))}
+  for(const id of ids.slice(1,-1)){
+    const q=coords.get(id);if(!q)continue;const t=vv?((q.x-A.x)*vx+(q.z-A.z)*vz)/vv:0;
+    maxPerp=Math.max(maxPerp,dist(q,{x:A.x+vx*t,z:A.z+vz*t}));
+  }
   if(maxPerp>Math.max(120,dAB*.24))return;
-  let ps=ids.map(id=>coords.get(id)),total=0,cum=[0];for(let i=1;i<ps.length;i++){total+=dist(ps[i-1],ps[i]);cum.push(total)}if(!total)return;
+  let ps=ids.map(id=>coords.get(id)),total=0,cum=[0];
+  for(let i=1;i<ps.length;i++){total+=dist(ps[i-1],ps[i]);cum.push(total)}if(!total)return;
   const deg0=graph.get(ids[0])?.size??0,deg1=graph.get(ids.at(-1))?.size??0;
   if(deg0<=2&&deg1>2){
     ids=[...ids].reverse();A=coords.get(ids[0]);B=coords.get(ids.at(-1));snap=nearestOctilinear(Math.atan2(B.z-A.z,B.x-A.x));ux=Math.cos(snap);uz=Math.sin(snap);proj=(B.x-A.x)*ux+(B.z-A.z)*uz;
@@ -70,18 +77,26 @@ function tramChainProposal(ids,graph,coords,proposals){
     const t=cum[i]/total;addProposal(proposals,id,{x:A.x+ux*proj*t,z:A.z+uz*proj*t});
   }
 }
-
 function simplifyTrams(routes){
   const{graph,coords}=buildGraph(routes),proposals=new Map();
-  for(const r of routes){const seq=routeStops(r).map(stopId).filter(Boolean);if(seq.length<3)continue;let start=0;for(let i=1;i<seq.length;i++){const degree=graph.get(seq[i])?.size??0,isAnchor=i===seq.length-1||degree!==2;if(!isAnchor)continue;tramChainProposal(seq.slice(start,i+1),graph,coords,proposals);start=i}}
-  return{positions:finalize(proposals),ids:new Set([...coords.keys()]),nodes:graph.size};
+  for(const r of routes){
+    const seq=routeStops(r).map(stopId).filter(Boolean);if(seq.length<3)continue;let start=0;
+    for(let i=1;i<seq.length;i++){
+      const degree=graph.get(seq[i])?.size??0,isAnchor=i===seq.length-1||degree!==2;if(!isAnchor)continue;
+      tramChainProposal(seq.slice(start,i+1),graph,coords,proposals);start=i;
+    }
+  }
+  return{positions:finalize(proposals),ids:new Set([...coords.keys()]),nodes:graph.size,coords};
 }
 
 function runFits(ids,coords,maxAngle=24,maxPerpFactor=.30){
   if(ids.length<3)return null;const A=coords.get(ids[0]),B=coords.get(ids.at(-1));if(!A||!B)return null;
   const dAB=dist(A,B);if(dAB<55)return null;const raw=Math.atan2(B.z-A.z,B.x-A.x),snap=nearestOctilinear(raw);if(angleDiff(raw,snap)>rad(maxAngle))return null;
   const vx=B.x-A.x,vz=B.z-A.z,vv=vx*vx+vz*vz;let maxPerp=0;
-  for(const id of ids.slice(1,-1)){const q=coords.get(id);if(!q)continue;const t=vv?((q.x-A.x)*vx+(q.z-A.z)*vz)/vv:0;maxPerp=Math.max(maxPerp,dist(q,{x:A.x+vx*t,z:A.z+vz*t}))}
+  for(const id of ids.slice(1,-1)){
+    const q=coords.get(id);if(!q)continue;const t=vv?((q.x-A.x)*vx+(q.z-A.z)*vz)/vv:0;
+    maxPerp=Math.max(maxPerp,dist(q,{x:A.x+vx*t,z:A.z+vz*t}));
+  }
   if(maxPerp>Math.max(150,dAB*maxPerpFactor))return null;
   const ux=Math.cos(snap),uz=Math.sin(snap),proj=(B.x-A.x)*ux+(B.z-A.z)*uz;if(Math.abs(proj)<45)return null;
   return{A,ux,uz,proj};
@@ -97,25 +112,103 @@ function simplifyBuses(routes){
         const fit=runFits(seq.slice(i,j+1),coords);if(fit){best=j;bestFit=fit}else if(best>=i+2&&j-best>2)break;
       }
       if(best<0){i++;continue}
-      const ids=seq.slice(i,best+1),ps=ids.map(id=>coords.get(id));let total=0,cum=[0];for(let k=1;k<ps.length;k++){total+=dist(ps[k-1],ps[k]);cum.push(total)}
+      const ids=seq.slice(i,best+1),ps=ids.map(id=>coords.get(id));let total=0,cum=[0];
+      for(let k=1;k<ps.length;k++){total+=dist(ps[k-1],ps[k]);cum.push(total)}
       if(total>0){for(let k=1;k<ids.length-1;k++){const t=cum[k]/total;addProposal(proposals,ids[k],{x:bestFit.A.x+bestFit.ux*bestFit.proj*t,z:bestFit.A.z+bestFit.uz*bestFit.proj*t})}}
       i=best;
     }
   }
-  return{positions:finalize(proposals),ids:new Set([...coords.keys()]),nodes:graph.size};
+  return{positions:finalize(proposals),ids:new Set([...coords.keys()]),nodes:graph.size,coords};
+}
+
+function buildTramSpines(routes,coords){
+  const raw=[];
+  for(const r of routes){
+    const ids=routeStops(r).map(stopId).filter(id=>coords.has(id));
+    for(let i=1;i<ids.length;i++){
+      const A=coords.get(ids[i-1]),B=coords.get(ids[i]);if(!A||!B)continue;
+      const L=dist(A,B);if(L<70)continue;
+      const angle=Math.atan2(B.z-A.z,B.x-A.x),snap=nearestOctilinear(angle);
+      if(angleDiff(angle,snap)>rad(8))continue;
+      const ux=Math.cos(snap),uz=Math.sin(snap),nx=-uz,nz=ux;
+      raw.push({A,B,ux,uz,nx,nz,angle:snap,length:L});
+    }
+  }
+  const out=[];
+  for(const s of raw){
+    const mx=(s.A.x+s.B.x)/2,mz=(s.A.z+s.B.z)/2;let same=false;
+    for(const t of out){
+      if(angleDiff(s.angle,t.angle)>rad(2))continue;
+      const d=Math.abs((mx-t.A.x)*t.nx+(mz-t.A.z)*t.nz);
+      if(d<45){same=true;break}
+    }
+    if(!same)out.push(s);
+  }
+  return out;
+}
+function signedDistanceToSpine(q,s){return(q.x-s.A.x)*s.nx+(q.z-s.A.z)*s.nz}
+function alongSpine(q,s){return(q.x-s.A.x)*s.ux+(q.z-s.A.z)*s.uz}
+function closestCompatibleSpine(a,b,spines){
+  const ang=Math.atan2(b.z-a.z,b.x-a.x),mid={x:(a.x+b.x)/2,z:(a.z+b.z)/2};
+  let best=null,bestScore=Infinity;
+  for(const s of spines){
+    if(angleDiff(ang,s.angle)>rad(20))continue;
+    const da=Math.abs(signedDistanceToSpine(a,s)),db=Math.abs(signedDistanceToSpine(b,s)),dm=Math.abs(signedDistanceToSpine(mid,s));
+    if(Math.max(da,db)>300||dm>250)continue;
+    const ta=alongSpine(a,s),tb=alongSpine(b,s),pad=Math.max(260,s.length*.55);
+    if(Math.max(ta,tb)<-pad||Math.min(ta,tb)>s.length+pad)continue;
+    const score=dm+Math.max(da,db)*.35+angleDiff(ang,s.angle)*120;
+    if(score<bestScore){best=s;bestScore=score}
+  }
+  return best;
+}
+function inheritBusCorridors(routes,baseCoords,spines,tramIds){
+  const proposals=new Map();
+  for(const r of routes){
+    const ids=routeStops(r).map(stopId).filter(id=>baseCoords.has(id));if(ids.length<2)continue;
+    const edgeGuide=[];
+    for(let i=1;i<ids.length;i++)edgeGuide[i-1]=closestCompatibleSpine(baseCoords.get(ids[i-1]),baseCoords.get(ids[i]),spines);
+    let i=0;
+    while(i<edgeGuide.length){
+      const guide=edgeGuide[i];if(!guide){i++;continue}
+      let j=i;
+      while(j+1<edgeGuide.length&&edgeGuide[j+1]){
+        const n=edgeGuide[j+1];
+        if(angleDiff(n.angle,guide.angle)>rad(2))break;
+        const md=Math.abs(signedDistanceToSpine(n.A,guide));if(md>70)break;
+        j++;
+      }
+      const runIds=ids.slice(i,j+2),pts=runIds.map(id=>baseCoords.get(id));
+      const sharesTram=runIds.some(id=>tramIds.has(id));
+      let offset=sharesTram?0:median(pts.map(q=>signedDistanceToSpine(q,guide)));
+      if(Math.abs(offset)<85)offset=0;offset=Math.max(-220,Math.min(220,offset));
+      for(let k=0;k<runIds.length;k++){
+        const id=runIds[k];if(tramIds.has(id))continue;
+        const q=pts[k],t=alongSpine(q,guide);
+        addProposal(proposals,id,{x:guide.A.x+guide.ux*t+guide.nx*offset,z:guide.A.z+guide.uz*t+guide.nz*offset});
+      }
+      i=j+1;
+    }
+  }
+  return finalize(proposals);
 }
 
 function simplifyLightRail(data){
   const all=(data.routes||[]).filter(isLightRail),trams=all.filter(r=>classOf(r)==='tram'),buses=all.filter(r=>classOf(r)==='bus');
   const T=simplifyTrams(trams),B=simplifyBuses(buses);
+  const tramCoords=withOverrides(T.coords,T.positions),busCoords=withOverrides(B.coords,B.positions);
+  for(const id of T.ids)if(T.positions.has(id)&&busCoords.has(id))busCoords.set(id,T.positions.get(id));
+  const spines=buildTramSpines(trams,tramCoords),inherited=inheritBusCorridors(buses,busCoords,spines,T.ids);
   const finalPos=new Map(T.positions);
   for(const[id,q]of B.positions)if(!T.ids.has(id))finalPos.set(id,q);
+  for(const[id,q]of inherited)if(!T.ids.has(id))finalPos.set(id,q);
   for(const r of all)for(const st of routeStops(r)){const q=finalPos.get(stopId(st));if(q)setPoint(st,q)}
-  window.__folitynSchematicDebug={tramRoutes:trams.length,busRoutes:buses.length,tramNodes:T.nodes,busNodes:B.nodes,tramMoved:T.positions.size,busMoved:[...B.positions.keys()].filter(id=>!T.ids.has(id)).length};
+  window.__folitynSchematicDebug={tramRoutes:trams.length,busRoutes:buses.length,tramNodes:T.nodes,busNodes:B.nodes,tramMoved:T.positions.size,busMoved:[...B.positions.keys()].filter(id=>!T.ids.has(id)).length,tramSpines:spines.length,busInherited:inherited.size};
 }
 
 function filterEnvelope(env){
-  if(!env||typeof env!=='object')return env;const src=env.data&&typeof env.data==='object'?env.data:env;if(!Array.isArray(src.routes))return env;
+  if(!env||typeof env!=='object')return env;
+  const src=env.data&&typeof env.data==='object'?env.data:env;if(!Array.isArray(src.routes))return env;
   const out=typeof structuredClone==='function'?structuredClone(env):JSON.parse(JSON.stringify(env)),data=out.data&&typeof out.data==='object'?out.data:out,before=data.routes.length;
   data.routes=data.routes.filter(r=>{const c=classOf(r);if(c==='tram')return tramsOn();if(c==='bus')return busesOn();return true});
   if(simplifyOn())simplifyLightRail(data);
