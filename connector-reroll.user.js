@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         MTR Map Tools - Folityn Native Geometry v8
+// @name         MTR Map Tools - Folityn Schematic Native v9
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      8.0.0
-// @description  Keep the native MTR renderer and clean its input geometry: shared station coordinates, straight corridors, octilinear snapping, native interactions preserved.
+// @version      9.0.0
+// @description  Native MTR renderer with hard schematic corridors, simplified 0/45/90 geometry and grouped interchange hubs.
 // @match        http://localhost:8888/*
 // @run-at       document-start
 // @grant        none
@@ -10,411 +10,57 @@
 // @updateURL    https://raw.githubusercontent.com/peachemce/mtr-map-tools/main/connector-reroll.user.js
 // @downloadURL  https://raw.githubusercontent.com/peachemce/mtr-map-tools/main/connector-reroll.user.js
 // ==/UserScript==
-
 (() => {
 'use strict';
-
-const KEY = 'folityn-native-v8-';
-const ENABLED = localStorage.getItem(KEY + 'enabled') !== '0';
-const STRICT_45 = localStorage.getItem(KEY + 'strict45') !== '0';
-const TARGET = /\/mtr\/api\/map\/stations-and-routes(?:\?|$)/;
-
-const CFG = {
-  straightAngleDeg: 18,
-  snapAngleDeg: 18,
-  straightPerpRatio: 0.12,
-  maxMoveEdgeRatio: 0.28,
-  maxMoveAbsolute: 240,
-  sameNameMergeDistance: 220,
-  passes: 5,
-};
-
-const EXPLICIT_GROUPS = [
-  {name: 'Wity', aliases: ['folityn wity', 'wity pkm']},
-  {name: 'Folityn Jamnikowsko', aliases: ['folityn jamnikowsko', 'jamnikowsko pkm']},
-];
-
-const FORCED_CORRIDORS = [
-  {from: 'rogowska centrum miejskie', to: ['szwedzka stadion', 'szwedzka', 'norweska']},
-];
-
-const norm = value => String(value ?? '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
-const median = values => {
-  if (!values.length) return 0;
-  const a = [...values].sort((x, y) => x - y);
-  const m = Math.floor(a.length / 2);
-  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
-};
-const dist = (a, b) => Math.hypot(b.x - a.x, b.z - a.z);
-const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
-const angle = (a, b) => Math.atan2(b.z - a.z, b.x - a.x);
-const angleDiff = (a, b) => {
-  let d = Math.abs(a - b) % (Math.PI * 2);
-  return d > Math.PI ? Math.PI * 2 - d : d;
-};
-const pointSegProjection = (p, a, b) => {
-  const vx = b.x - a.x, vz = b.z - a.z;
-  const vv = vx * vx + vz * vz;
-  if (!vv) return {...a};
-  const t = clamp(((p.x - a.x) * vx + (p.z - a.z) * vz) / vv, 0, 1);
-  return {x: a.x + vx * t, z: a.z + vz * t};
-};
-const pointLineProjection = (p, origin, ux, uz) => {
-  const t = (p.x - origin.x) * ux + (p.z - origin.z) * uz;
-  return {x: origin.x + ux * t, z: origin.z + uz * t};
-};
-
-function routeStations(route) {
-  if (Array.isArray(route?.stations)) return route.stations;
-  if (Array.isArray(route?.routeStations)) return route.routeStations;
-  if (Array.isArray(route?.platforms)) return route.platforms;
-  return [];
+const TARGET=/\/mtr\/api\/map\/stations-and-routes(?:\?|$)/,KEY='folityn-v9-',ON=localStorage.getItem(KEY+'on')!=='0';
+const norm=s=>String(s??'').trim().replace(/\s+/g,' ').toLocaleLowerCase(),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const med=a=>{if(!a.length)return 0;const b=[...a].sort((x,y)=>x-y),m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2};
+const dist=(a,b)=>Math.hypot(b.x-a.x,b.z-a.z),ang=(a,b)=>Math.atan2(b.z-a.z,b.x-a.x),adiff=(a,b)=>{let d=Math.abs(a-b)%(Math.PI*2);return d>Math.PI?Math.PI*2-d:d};
+const ray=(o,a,d)=>({x:o.x+Math.cos(a)*d,z:o.z+Math.sin(a)*d}),snap=a=>Math.round(a/(Math.PI/4))*(Math.PI/4);
+const rot=(p,o,t)=>{const c=Math.cos(t),s=Math.sin(t),x=p.x-o.x,z=p.z-o.z;return{x:o.x+x*c-z*s,z:o.z+x*s+z*c}};
+const proj=(p,a,b)=>{const x=b.x-a.x,z=b.z-a.z,q=x*x+z*z;if(!q)return{...a};const t=((p.x-a.x)*x+(p.z-a.z)*z)/q;return{x:a.x+t*x,z:a.z+t*z}};
+const ALIASES=new Map([
+ ['folityn centralny','folityn centralny'],['folityn wity','wity'],['wity pkm','wity'],
+ ['folityn jamnikowsko','folityn jamnikowsko'],['jamnikowsko pkm','folityn jamnikowsko']
+]);
+const N={central:['folityn centralny'],rcm:['rogowska centrum miejskie'],east:['szwedzka stadion','szwedzka','norweska'],drzewiec:['folityn drzewiec'],lipkow:['folityn lipków','folityn lipkow'],jam:['folityn jamnikowsko'],wiadukt:['wiadukt torowy'],larcho:['rondo larcho']};
+function stations(r){return Array.isArray(r?.stations)?r.stations:Array.isArray(r?.routeStations)?r.routeStations:Array.isArray(r?.platforms)?r.platforms:[]}
+function id(s){return String(s?.id??s?.hexId??s?.stationId??'')}
+function point(s){const x=Number(s?.x??s?.position?.x),z=Number(s?.z??s?.position?.z);return Number.isFinite(x)&&Number.isFinite(z)?{x,z}:null}
+function put(s,p){const x=Math.round(p.x*100)/100,z=Math.round(p.z*100)/100;if('x'in s||!s.position)s.x=x;if('z'in s||!s.position)s.z=z;if(s.position){s.position.x=x;s.position.z=z}}
+function kind(r){const t=norm(r?.type).replace(/[\s-]+/g,'_');return t.includes('high_speed')?'high_speed':t.includes('normal')?'rail':t.includes('light_rail')?'light_rail':t}
+function clean(env){
+ if(!ON||!env||typeof env!=='object')return env;const src=env.data&&typeof env.data==='object'?env.data:env;if(!Array.isArray(src.routes)||!Array.isArray(src.stations))return env;
+ const out=typeof structuredClone==='function'?structuredClone(env):JSON.parse(JSON.stringify(env)),data=out.data&&typeof out.data==='object'?out.data:out,routes=data.routes,top=data.stations,topById=new Map(top.map(s=>[id(s),s]));
+ const occ=new Map();for(const r of routes)for(const s of stations(r)){const k=id(s),p=point(s);if(!k||!p)continue;if(!occ.has(k))occ.set(k,[]);occ.get(k).push(p)}
+ const logicalFor=new Map(),name=new Map(),members=new Map();for(const k of occ.keys()){const n=norm(topById.get(k)?.name??k),g=ALIASES.get(n)||`name:${n}`;logicalFor.set(k,g);if(!members.has(g))members.set(g,[]);members.get(g).push(k);name.set(g,g.startsWith('name:')?String(topById.get(k)?.name??k):g==='wity'?'Wity':g==='folityn centralny'?'Folityn Centralny':'Folityn Jamnikowsko')}
+ const original=new Map();for(const[g,ids]of members){const ps=ids.flatMap(k=>occ.get(k)||[]);original.set(g,{x:med(ps.map(p=>p.x)),z:med(ps.map(p=>p.z))})}
+ const seqs=[];for(const r of routes){const q=[];for(const s of stations(r)){const g=logicalFor.get(id(s));if(g&&q.at(-1)!==g)q.push(g)}if(q.length>1)seqs.push({r,k:kind(r),q})}
+ const adj=new Map([...original.keys()].map(k=>[k,new Set()])),lens=[];for(const s of seqs)for(let i=1;i<s.q.length;i++){const a=s.q[i-1],b=s.q[i];if(a===b)continue;adj.get(a)?.add(b);adj.get(b)?.add(a);if(original.get(a)&&original.get(b))lens.push(dist(original.get(a),original.get(b)))}
+ const typical=Math.max(120,med(lens.filter(x=>x>20))||420),step=typical*.92,byName=new Map();for(const[k,v]of name)byName.set(norm(v),k);
+ const find=arr=>{for(const x of arr){const k=byName.get(norm(x));if(k)return k}return null},central=find(N.central),rcm=find(N.rcm),east=find(N.east),drz=find(N.drzewiec),lip=find(N.lipkow),jam=find(N.jam),wia=find(N.wiadukt),lar=find(N.larcho);
+ const pos=new Map([...original].map(([k,p])=>[k,{...p}]));if(rcm&&east&&pos.has(rcm)&&pos.has(east)){const o=pos.get(rcm),t=-ang(o,pos.get(east));for(const[k,p]of pos)pos.set(k,rot(p,o,t))}
+ const locked=new Set(),lock=(k,p)=>{if(k&&p){pos.set(k,{...p});locked.add(k)}};
+ if(central&&pos.has(central)){const c=pos.get(central);lock(central,c);if(rcm)lock(rcm,{x:c.x+step*.72,z:c.z-step*2.05});if(wia)lock(wia,{x:c.x+step*.28,z:c.z-step*1.08});if(lar)lock(lar,{x:c.x-step*.78,z:c.z-step*2.05})}
+ const edgeStep=(a,b)=>{const A=original.get(a),B=original.get(b),d=A&&B?dist(A,B):typical;return step*clamp(Math.sqrt(Math.max(.1,d/typical)),.72,1.42)};
+ function segment(a,b,kinds){let best=null;for(const s of seqs){if(kinds&&!kinds.has(s.k))continue;const i=s.q.indexOf(a),j=s.q.indexOf(b);if(i<0||j<0||i===j)continue;let q=s.q.slice(Math.min(i,j),Math.max(i,j)+1);if(i>j)q=q.reverse();if(!best||q.length<best.length)best=q}return best}
+ function bfs(a,b){if(!a||!b)return null;const q=[a],pre=new Map([[a,null]]);while(q.length){const n=q.shift();if(n===b)break;for(const x of adj.get(n)||[])if(!pre.has(x)){pre.set(x,n);q.push(x)}}if(!pre.has(b))return null;const p=[];for(let n=b;n;n=pre.get(n))p.push(n);return p.reverse()}
+ const path=(a,b,k)=>segment(a,b,k)||bfs(a,b);
+ function place(q,o,h){if(!q||q.length<2||!o)return;let d=0;lock(q[0],o);for(let i=1;i<q.length;i++){d+=edgeStep(q[i-1],q[i]);lock(q[i],ray(o,h,d))}}
+ if(rcm&&east&&pos.has(rcm))place(path(rcm,east),pos.get(rcm),0);
+ if(central&&drz&&pos.has(central))place(path(central,drz,new Set(['rail','high_speed','light_rail']))||path(central,drz),pos.get(central),Math.PI/2);
+ if(drz&&lip&&pos.has(drz))place(path(drz,lip),pos.get(drz),Math.PI/2);
+ if(central&&jam&&pos.has(central))place(path(central,jam,new Set(['rail','high_speed']))||path(central,jam),pos.get(central),Math.PI/4);
+ const degree=k=>adj.get(k)?.size??0,cands=[];for(const s of seqs){let i=0;while(i<s.q.length-2){let j=i+1,h=ang(pos.get(s.q[i]),pos.get(s.q[j]));while(j<s.q.length-1){const a=pos.get(s.q[j]),b=pos.get(s.q[j+1]);if(!a||!b)break;const nh=ang(a,b);if(adiff(h,nh)>Math.PI/7.2||(degree(s.q[j])>2&&j>i+1))break;h=nh;j++}if(j-i>=2)cands.push(s.q.slice(i,j+1));i=Math.max(i+1,j)}}
+ cands.sort((a,b)=>b.length-a.length);const used=new Set();for(const q of cands){const mid=q.slice(1,-1);if(!mid.length||mid.some(k=>locked.has(k)||used.has(k)||degree(k)>2))continue;const A=q[0],B=q.at(-1),a=pos.get(A),b=pos.get(B);if(!a||!b)continue;const af=locked.has(A)||degree(A)>2,bf=locked.has(B)||degree(B)>2;if(af&&bf){for(const k of mid)pos.set(k,proj(pos.get(k),a,b))}else{const O=af?A:bf?B:A,ordered=O===A?q:[...q].reverse(),o=pos.get(O),far=pos.get(ordered.at(-1)),h=snap(ang(o,far));let d=0;for(let x=1;x<ordered.length;x++){d+=edgeStep(ordered[x-1],ordered[x]);const k=ordered[x];if(locked.has(k)||degree(k)>2)break;pos.set(k,ray(o,h,d))}}mid.forEach(k=>used.add(k))}
+ if(rcm&&east&&pos.has(rcm))place(path(rcm,east),pos.get(rcm),0);if(central&&drz&&pos.has(central))place(path(central,drz),pos.get(central),Math.PI/2);if(drz&&lip&&pos.has(drz))place(path(drz,lip),pos.get(drz),Math.PI/2);if(central&&jam&&pos.has(central))place(path(central,jam,new Set(['rail','high_speed']))||path(central,jam),pos.get(central),Math.PI/4);
+ for(const r of routes)for(const s of stations(r)){const p=pos.get(logicalFor.get(id(s)));if(p)put(s,p)}
+ return out;
 }
-
-function routeType(route) {
-  return norm(route?.type).replace(/[\s-]+/g, '_');
-}
-
-function publicRouteKey(route) {
-  return [routeType(route), Number(route?.color ?? 0), norm(route?.name ?? route?.routeNumber ?? route?.number ?? '')].join('|');
-}
-
-function cleanNetworkEnvelope(envelope) {
-  if (!ENABLED || !envelope || typeof envelope !== 'object') return envelope;
-  const root = envelope.data && typeof envelope.data === 'object' ? envelope.data : envelope;
-  if (!Array.isArray(root.routes) || !Array.isArray(root.stations)) return envelope;
-
-  const output = typeof structuredClone === 'function' ? structuredClone(envelope) : JSON.parse(JSON.stringify(envelope));
-  const data = output.data && typeof output.data === 'object' ? output.data : output;
-  const routes = data.routes || [];
-  const stations = data.stations || [];
-  const stationById = new Map(stations.map(s => [String(s.id ?? s.hexId ?? s.stationId ?? ''), s]));
-
-  const coordsByRawId = new Map();
-  const routeSeqsRaw = [];
-  for (const route of routes) {
-    const seq = [];
-    for (const st of routeStations(route)) {
-      const id = String(st?.id ?? st?.hexId ?? st?.stationId ?? '');
-      const x = Number(st?.x ?? st?.position?.x);
-      const z = Number(st?.z ?? st?.position?.z);
-      if (!id || !Number.isFinite(x) || !Number.isFinite(z)) continue;
-      seq.push(id);
-      if (!coordsByRawId.has(id)) coordsByRawId.set(id, []);
-      coordsByRawId.get(id).push({x, z});
-    }
-    if (seq.length >= 2) routeSeqsRaw.push({route, seq});
-  }
-
-  const rawPoint = new Map();
-  for (const [id, pts] of coordsByRawId) {
-    rawPoint.set(id, {x: median(pts.map(p => p.x)), z: median(pts.map(p => p.z))});
-  }
-
-  const ids = [...rawPoint.keys()];
-  const parent = new Map(ids.map(id => [id, id]));
-  const find = id => {
-    let p = parent.get(id) ?? id;
-    while (p !== (parent.get(p) ?? p)) p = parent.get(p);
-    let q = id;
-    while ((parent.get(q) ?? q) !== p) { const n = parent.get(q); parent.set(q, p); q = n; }
-    return p;
-  };
-  const union = (a, b) => {
-    if (!parent.has(a) || !parent.has(b)) return;
-    a = find(a); b = find(b);
-    if (a !== b) parent.set(b, a);
-  };
-
-  const idsByPublicName = new Map();
-  for (const id of ids) {
-    const n = norm(stationById.get(id)?.name ?? id);
-    if (!idsByPublicName.has(n)) idsByPublicName.set(n, []);
-    idsByPublicName.get(n).push(id);
-  }
-
-  for (const group of EXPLICIT_GROUPS) {
-    const groupIds = [];
-    for (const alias of group.aliases) groupIds.push(...(idsByPublicName.get(alias) || []));
-    for (let i = 1; i < groupIds.length; i++) union(groupIds[0], groupIds[i]);
-  }
-
-  for (const groupIds of idsByPublicName.values()) {
-    for (let i = 0; i < groupIds.length; i++) for (let j = i + 1; j < groupIds.length; j++) {
-      const a = rawPoint.get(groupIds[i]), b = rawPoint.get(groupIds[j]);
-      if (a && b && dist(a, b) <= CFG.sameNameMergeDistance) union(groupIds[i], groupIds[j]);
-    }
-  }
-
-  const members = new Map();
-  for (const id of ids) {
-    const r = find(id);
-    if (!members.has(r)) members.set(r, []);
-    members.get(r).push(id);
-  }
-
-  const logicalForRaw = new Map();
-  const logicalPoint = new Map();
-  const logicalName = new Map();
-  for (const [rep, memberIds] of members) {
-    const pts = memberIds.map(id => rawPoint.get(id)).filter(Boolean);
-    if (!pts.length) continue;
-    const p = {x: median(pts.map(v => v.x)), z: median(pts.map(v => v.z))};
-    logicalPoint.set(rep, p);
-    const names = memberIds.map(id => String(stationById.get(id)?.name ?? '')).filter(Boolean);
-    let display = names[0] || rep;
-    for (const group of EXPLICIT_GROUPS) {
-      if (names.some(n => group.aliases.includes(norm(n)))) { display = group.name; break; }
-    }
-    logicalName.set(rep, display);
-    for (const id of memberIds) logicalForRaw.set(id, rep);
-  }
-
-  const routeSeqs = [];
-  for (const {route, seq} of routeSeqsRaw) {
-    const logical = [];
-    for (const rawId of seq) {
-      const id = logicalForRaw.get(rawId) ?? rawId;
-      if (logical.at(-1) !== id) logical.push(id);
-    }
-    if (logical.length >= 2) routeSeqs.push({route, key: publicRouteKey(route), seq: logical});
-  }
-
-  const edgeLengths = [];
-  for (const {seq} of routeSeqs) for (let i = 1; i < seq.length; i++) {
-    const a = logicalPoint.get(seq[i - 1]), b = logicalPoint.get(seq[i]);
-    if (a && b) edgeLengths.push(dist(a, b));
-  }
-  const typicalEdge = Math.max(40, median(edgeLengths));
-  const maxMove = Math.min(CFG.maxMoveAbsolute, typicalEdge * CFG.maxMoveEdgeRatio);
-  const straightAngle = CFG.straightAngleDeg * Math.PI / 180;
-  const snapError = CFG.snapAngleDeg * Math.PI / 180;
-
-  for (let pass = 0; pass < CFG.passes; pass++) {
-    const proposals = new Map();
-    for (const {seq} of routeSeqs) {
-      for (let i = 1; i < seq.length - 1; i++) {
-        const aid = seq[i - 1], pid = seq[i], bid = seq[i + 1];
-        const a = logicalPoint.get(aid), p = logicalPoint.get(pid), b = logicalPoint.get(bid);
-        if (!a || !p || !b || aid === bid) continue;
-        const h1 = angle(a, p), h2 = angle(p, b);
-        const base = Math.max(1, dist(a, b));
-        const q = pointSegProjection(p, a, b);
-        const shift = dist(p, q);
-        const almostSameHeading = angleDiff(h1, h2) <= straightAngle;
-        const closeToChord = shift <= Math.min(maxMove, base * CFG.straightPerpRatio);
-        if (!(almostSameHeading || closeToChord) || shift > maxMove) continue;
-        if (!proposals.has(pid)) proposals.set(pid, []);
-        proposals.get(pid).push(q);
-      }
-    }
-    let changed = 0;
-    for (const [id, qs] of proposals) {
-      const old = logicalPoint.get(id);
-      if (!old || !qs.length) continue;
-      const q = {x: median(qs.map(v => v.x)), z: median(qs.map(v => v.z))};
-      if (dist(old, q) <= maxMove) { logicalPoint.set(id, q); changed++; }
-    }
-    if (!changed) break;
-  }
-
-  if (STRICT_45) {
-    const proposals = new Map();
-    const seenRun = new Set();
-    for (const {key, seq} of routeSeqs) {
-      let start = 0;
-      while (start < seq.length - 1) {
-        let end = start + 1;
-        let prev = angle(logicalPoint.get(seq[start]), logicalPoint.get(seq[end]));
-        while (end < seq.length - 1) {
-          const p = logicalPoint.get(seq[end]), n = logicalPoint.get(seq[end + 1]);
-          if (!p || !n) break;
-          const h = angle(p, n);
-          if (angleDiff(prev, h) > straightAngle) break;
-          prev = h; end++;
-        }
-        if (end - start >= 2) {
-          const run = seq.slice(start, end + 1);
-          const signature = key + '|' + run.join('>');
-          if (!seenRun.has(signature)) {
-            seenRun.add(signature);
-            const pts = run.map(id => logicalPoint.get(id));
-            if (pts.every(Boolean)) {
-              const first = pts[0], last = pts.at(-1);
-              const rawHeading = angle(first, last);
-              const snapped = Math.round(rawHeading / (Math.PI / 4)) * (Math.PI / 4);
-              if (angleDiff(rawHeading, snapped) <= snapError) {
-                const ux = Math.cos(snapped), uz = Math.sin(snapped);
-                const center = {x: median(pts.map(p => p.x)), z: median(pts.map(p => p.z))};
-                const projected = pts.map(p => pointLineProjection(p, center, ux, uz));
-                const worst = Math.max(...projected.map((p, i) => dist(p, pts[i])));
-                if (worst <= maxMove) {
-                  run.forEach((id, i) => {
-                    if (!proposals.has(id)) proposals.set(id, []);
-                    proposals.get(id).push(projected[i]);
-                  });
-                }
-              }
-            }
-          }
-        }
-        start = Math.max(start + 1, end);
-      }
-    }
-    for (const [id, qs] of proposals) {
-      const old = logicalPoint.get(id);
-      if (!old || !qs.length) continue;
-      const q = {x: median(qs.map(v => v.x)), z: median(qs.map(v => v.z))};
-      if (dist(old, q) <= maxMove) logicalPoint.set(id, q);
-    }
-  }
-
-  const nameToLogical = new Map();
-  for (const [id, name] of logicalName) nameToLogical.set(norm(name), id);
-  for (const rule of FORCED_CORRIDORS) {
-    const fromId = nameToLogical.get(rule.from);
-    let toId = null;
-    for (const n of rule.to) if (nameToLogical.has(n)) { toId = nameToLogical.get(n); break; }
-    if (!fromId || !toId) continue;
-    for (const {seq} of routeSeqs) {
-      const i1 = seq.indexOf(fromId), i2 = seq.indexOf(toId);
-      if (i1 < 0 || i2 < 0 || i1 === i2) continue;
-      const lo = Math.min(i1, i2), hi = Math.max(i1, i2);
-      const a = logicalPoint.get(seq[lo]), b = logicalPoint.get(seq[hi]);
-      if (!a || !b) continue;
-      for (let i = lo + 1; i < hi; i++) {
-        const id = seq[i], p = logicalPoint.get(id);
-        if (!p) continue;
-        const q = pointSegProjection(p, a, b);
-        if (dist(p, q) <= Math.max(maxMove, typicalEdge * 0.45)) logicalPoint.set(id, q);
-      }
-    }
-  }
-
-  let changedOccurrences = 0;
-  for (const route of routes) {
-    for (const st of routeStations(route)) {
-      const rawId = String(st?.id ?? st?.hexId ?? st?.stationId ?? '');
-      const logical = logicalForRaw.get(rawId);
-      const p = logical && logicalPoint.get(logical);
-      if (!p) continue;
-      const oldX = Number(st?.x ?? st?.position?.x), oldZ = Number(st?.z ?? st?.position?.z);
-      if (Number.isFinite(oldX) && Number.isFinite(oldZ) && (Math.abs(oldX - p.x) > .01 || Math.abs(oldZ - p.z) > .01)) changedOccurrences++;
-      if ('x' in st || !st.position) st.x = Math.round(p.x * 100) / 100;
-      if ('z' in st || !st.position) st.z = Math.round(p.z * 100) / 100;
-      if (st.position && typeof st.position === 'object') {
-        st.position.x = Math.round(p.x * 100) / 100;
-        st.position.z = Math.round(p.z * 100) / 100;
-      }
-    }
-  }
-
-  console.info(`[Folityn v8] Native MTR data cleaned: ${logicalPoint.size} visual stations, ${changedOccurrences} route-station coordinates adjusted. Native renderer remains active.`);
-  return output;
-}
-
-function cleanText(text) {
-  try { return JSON.stringify(cleanNetworkEnvelope(JSON.parse(text))); }
-  catch { return text; }
-}
-
-const nativeFetch = window.fetch.bind(window);
-window.fetch = async function(input, init) {
-  const url = typeof input === 'string' ? input : input?.url || '';
-  const response = await nativeFetch(input, init);
-  if (!ENABLED || !TARGET.test(url)) return response;
-  try {
-    const json = await response.clone().json();
-    const cleaned = cleanNetworkEnvelope(json);
-    const headers = new Headers(response.headers);
-    headers.delete('content-length');
-    return new Response(JSON.stringify(cleaned), {status: response.status, statusText: response.statusText, headers});
-  } catch (e) {
-    console.warn('[Folityn v8] fetch cleaning failed; native response used', e);
-    return response;
-  }
-};
-
-try {
-  const proto = XMLHttpRequest.prototype;
-  const nativeOpen = proto.open;
-  const textDescriptor = Object.getOwnPropertyDescriptor(proto, 'responseText');
-  const responseDescriptor = Object.getOwnPropertyDescriptor(proto, 'response');
-  const cache = new WeakMap();
-
-  proto.open = function(method, url, ...rest) {
-    this.__folitynTarget = ENABLED && TARGET.test(String(url || ''));
-    return nativeOpen.call(this, method, url, ...rest);
-  };
-
-  const cleanedTextFor = xhr => {
-    if (!xhr.__folitynTarget || xhr.readyState !== 4 || !textDescriptor?.get) return null;
-    if (cache.has(xhr)) return cache.get(xhr);
-    try {
-      const raw = textDescriptor.get.call(xhr);
-      const cleaned = cleanText(raw);
-      cache.set(xhr, cleaned);
-      return cleaned;
-    } catch { return null; }
-  };
-
-  if (textDescriptor?.configurable && textDescriptor.get) {
-    Object.defineProperty(proto, 'responseText', {
-      configurable: true,
-      enumerable: textDescriptor.enumerable,
-      get() { const cleaned = cleanedTextFor(this); return cleaned ?? textDescriptor.get.call(this); },
-    });
-  }
-
-  if (responseDescriptor?.configurable && responseDescriptor.get) {
-    Object.defineProperty(proto, 'response', {
-      configurable: true,
-      enumerable: responseDescriptor.enumerable,
-      get() {
-        if (this.__folitynTarget && this.readyState === 4) {
-          try {
-            if (this.responseType === 'json') {
-              const raw = responseDescriptor.get.call(this);
-              if (raw && typeof raw === 'object') return cleanNetworkEnvelope(raw);
-            }
-            if (!this.responseType || this.responseType === 'text') {
-              const cleaned = cleanedTextFor(this);
-              if (cleaned != null) return cleaned;
-            }
-          } catch {}
-        }
-        return responseDescriptor.get.call(this);
-      },
-    });
-  }
-} catch (e) {
-  console.warn('[Folityn v8] XHR interception unavailable; fetch interception remains active.', e);
-}
-
-function addPanel() {
-  document.querySelectorAll('#folityn-original-mtr-tools, [id^="folityn-v"]').forEach(el => el.remove());
-  if (document.getElementById('folityn-native-v8-panel')) return;
-  const panel = document.createElement('div');
-  panel.id = 'folityn-native-v8-panel';
-  panel.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:100000;background:rgba(12,18,30,.94);color:#fff;padding:10px 12px;border-radius:10px;font:12px/1.35 Arial,sans-serif;box-shadow:0 6px 24px #0008;min-width:220px';
-  panel.innerHTML = `
-    <div style="font-weight:750;font-size:13px">Folityn native geometry v8</div>
-    <div style="opacity:.7;font-size:11px;margin:2px 0 8px">MTR renderer + cleaned input geometry</div>
-    <label style="display:flex;gap:7px;align-items:center;margin:5px 0"><input id="fol-clean" type="checkbox" ${ENABLED ? 'checked' : ''}> Geometry cleanup</label>
-    <label style="display:flex;gap:7px;align-items:center;margin:5px 0"><input id="fol-45" type="checkbox" ${STRICT_45 ? 'checked' : ''}> Strict 0° / 45° / 90° corridors</label>
-    <div style="opacity:.62;font-size:10px;margin-top:7px">Changes require reload. Native MTR clicks, pan/zoom, filters and dark mode stay untouched.</div>`;
-  document.body.appendChild(panel);
-  panel.querySelector('#fol-clean').addEventListener('change', e => {
-    localStorage.setItem(KEY + 'enabled', e.target.checked ? '1' : '0');
-    location.reload();
-  });
-  panel.querySelector('#fol-45').addEventListener('change', e => {
-    localStorage.setItem(KEY + 'strict45', e.target.checked ? '1' : '0');
-    location.reload();
-  });
-}
-
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addPanel, {once: true});
-else addPanel();
-
+function tx(text){try{return JSON.stringify(clean(JSON.parse(text)))}catch(e){console.warn('[Folityn v9] transform failed',e);return text}}
+const nativeFetch=window.fetch.bind(window);window.fetch=async function(input,init){const u=typeof input==='string'?input:input?.url||'',r=await nativeFetch(input,init);if(!TARGET.test(u))return r;try{return new Response(tx(await r.clone().text()),{status:r.status,statusText:r.statusText,headers:r.headers})}catch{return r}};
+try{const p=XMLHttpRequest.prototype,open=p.open,tg=Object.getOwnPropertyDescriptor(p,'responseText')?.get,rg=Object.getOwnPropertyDescriptor(p,'response')?.get,cache=new WeakMap();p.open=function(m,u,...x){this.__f9=TARGET.test(String(u));cache.delete(this);return open.call(this,m,u,...x)};if(tg)Object.defineProperty(p,'responseText',{configurable:true,get(){const r=tg.call(this);if(!this.__f9||this.readyState!==4||typeof r!=='string')return r;let c=cache.get(this);if(!c){c={t:tx(r)};cache.set(this,c)}return c.t}});if(rg)Object.defineProperty(p,'response',{configurable:true,get(){const r=rg.call(this);if(!this.__f9||this.readyState!==4)return r;let c=cache.get(this)||{};if(this.responseType==='json'&&r&&typeof r==='object'){if(!c.j){c.j=clean(r);cache.set(this,c)}return c.j}if((this.responseType===''||this.responseType==='text')&&typeof r==='string'){if(!c.t){c.t=tx(r);cache.set(this,c)}return c.t}return r}})}catch(e){console.warn('[Folityn v9] XHR hook failed',e)}
+function icon(size){return`<svg viewBox="0 0 64 64" width="${size}" height="${size}"><circle cx="32" cy="32" r="29" fill="#101827" stroke="#e8eef8" stroke-width="4"/><rect x="12" y="20" width="26" height="24" rx="5" fill="none" stroke="#e8eef8" stroke-width="4"/><path d="M17 28h16M18 40l-3 5M31 40l3 5" stroke="#e8eef8" stroke-width="3"/><rect x="42" y="24" width="11" height="20" rx="3" fill="none" stroke="#e8eef8" stroke-width="4"/></svg>`}
+function dom(){if(!document.head)return setTimeout(dom,50);const st=document.createElement('style');st.textContent=`.f9hub{position:absolute;left:50%;top:0;transform:translate(-50%,-28%);z-index:30;pointer-events:none;filter:drop-shadow(0 2px 4px #0009)}.f9dup{display:none!important}#f9panel{position:fixed;left:14px;bottom:14px;z-index:100000;background:#0c121ef2;color:#fff;padding:9px 11px;border-radius:10px;font:12px Arial;box-shadow:0 6px 24px #0008}#f9panel button{margin-top:6px;background:#172235;color:#fff;border:1px solid #ffffff33;border-radius:7px;padding:5px 8px}`;document.head.appendChild(st);const panel=document.createElement('div');panel.id='f9panel';panel.innerHTML=`<b>Folityn schematic v9</b><br><span style="opacity:.65">native MTR · hard corridors</span><br><button>${ON?'Original geography':'Schematic layout'}</button>`;document.body.appendChild(panel);panel.querySelector('button').onclick=()=>{localStorage.setItem(KEY+'on',ON?'0':'1');location.reload()};const decorate=()=>{const ls=[...document.querySelectorAll('app-map .label[aria-label]')],doHub=(names,size,label)=>{const a=ls.filter(e=>names.includes(norm(e.getAttribute('aria-label'))));a.forEach((e,i)=>{if(i)e.classList.add('f9dup');else{const t=e.querySelector('.station-name.text');if(t&&label)t.textContent=label;if(!e.querySelector('.f9hub')){const b=document.createElement('div');b.className='f9hub';b.innerHTML=icon(size);e.appendChild(b)}}})};doHub(['folityn centralny'],62,'Folityn Centralny');doHub(['folityn wity','wity pkm'],44,'Wity');const j=ls.filter(e=>['folityn jamnikowsko','jamnikowsko pkm'].includes(norm(e.getAttribute('aria-label'))));j.forEach((e,i)=>{if(i)e.classList.add('f9dup')})};new MutationObserver(decorate).observe(document.body,{childList:true,subtree:true});setInterval(decorate,1000);decorate()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',dom,{once:true});else dom();
 })();
