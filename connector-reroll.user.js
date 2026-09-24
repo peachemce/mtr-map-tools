@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         MTR Map Tools - Folityn Schematic v6
+// @name         MTR Map Tools - Folityn Schematic v6.1
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      6.0.0
-// @description  Corridor-first interactive Folityn map: shared physical geometry, stable bundles, geography-first stations, clickable routes and interchange hubs.
+// @version      6.1.0
+// @description  Geography-first corridor renderer with shared rail trunks, 22.5-degree discipline, oriented station symbols, grouped hubs and interactive route/station panels.
 // @match        http://localhost:8888/*
 // @run-at       document-idle
 // @grant        none
@@ -13,98 +13,399 @@
 
 (() => {
 'use strict';
+
 const NS='http://www.w3.org/2000/svg';
-const KEY='folityn-v6-';
-const CFG={spacing:74,laneGap:7.2,pad:190,curve:20,collinearTol:.16};
-const state={dark:localStorage.getItem(KEY+'dark')!=='0',labels:localStorage.getItem(KEY+'labels')||'key',visible:new Set(JSON.parse(localStorage.getItem(KEY+'modes')||'["light_rail","rail","high_speed"]')),wrapper:null,overlay:null,svg:null,layers:null,model:null,pos:null,displayPos:null,view:null,fitView:null,drag:null,panel:null,selectedRoute:null};
+const KEY='folityn-v61-';
+const CFG={
+  spacing:74, laneGap:7, pad:180, curve:18,
+  straightTol:.105, shortcutRatio:1.28, shortcutPerp:.13, shortcutHops:5,
+  snapStep:Math.PI/8, snapMaxError:Math.PI/20
+};
+const state={
+  dark:localStorage.getItem(KEY+'dark')!=='0',
+  labels:localStorage.getItem(KEY+'labels')||'key',
+  visible:new Set(JSON.parse(localStorage.getItem(KEY+'modes')||'["light_rail","rail","high_speed"]')),
+  wrapper:null,overlay:null,svg:null,layers:null,model:null,pos:null,displayPos:null,
+  view:null,fitView:null,drag:null,panel:null,selectedRoute:null
+};
+
 const norm=s=>String(s??'').trim().replace(/\s+/g,' ').toLocaleLowerCase();
 const pairKey=(a,b)=>a<b?`${a}|${b}`:`${b}|${a}`;
-const dist=(a,b)=>Math.hypot(b.x-a.x,b.y-a.y);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const dist=(a,b)=>Math.hypot(b.x-a.x,b.y-a.y);
 const colorHex=n=>`#${((Number(n)>>>0)&0xffffff).toString(16).padStart(6,'0')}`;
 const median=v=>{if(!v.length)return 1;const a=[...v].sort((x,y)=>x-y),m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2};
 function modeOf(type){const t=String(type||'').toLowerCase().replace(/[\s-]+/g,'_');if(t==='train_light_rail')return'light_rail';if(t==='train_normal')return'rail';if(t==='train_high_speed')return'high_speed';return null}
 const modeLabel=m=>({light_rail:'Light Rail',rail:'Rail',high_speed:'High Speed'})[m]||m;
+const modeOrder=m=>({high_speed:0,rail:1,light_rail:2})[m]??9;
 function svgEl(tag,attrs={}){const e=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,String(v));return e}
 async function waitForMap(){for(;;){const w=document.querySelector('app-map .wrapper, .wrapper');if(w?.querySelector('canvas'))return w;await new Promise(r=>setTimeout(r,250))}}
 async function loadNetwork(){const r=await fetch('/mtr/api/map/stations-and-routes?dimension=0',{cache:'no-store'});if(!r.ok)throw new Error(`MTR network request failed (${r.status})`);const j=await r.json();return j?.data??j}
 
 function buildModel(data){
-  const visualGroups=new Map([['folityn wity','hub:wity'],['wity pkm','hub:wity']]);
+  const visualGroups=new Map([
+    ['folityn wity',{id:'hub:wity',name:'Wity',hub:'wity'}],
+    ['wity pkm',{id:'hub:wity',name:'Wity',hub:'wity'}],
+    ['folityn jamnikowsko',{id:'hub:jamnikowsko',name:'Folityn Jamnikowsko',hub:'jamnikowsko'}],
+    ['jamnikowsko pkm',{id:'hub:jamnikowsko',name:'Folityn Jamnikowsko',hub:'jamnikowsko'}],
+  ]);
   const rawToLogical=new Map(),stationMeta=new Map(),rawStation=new Map();
-  function logicalFor(s){const n=norm(s.name);if(visualGroups.has(n))return{id:'hub:wity',name:'Wity',hub:'wity'};return{id:`name:${n||s.id}`,name:String(s.name||s.id),hub:n==='folityn centralny'?'central':null}}
-  for(const s of data.stations||[]){rawStation.set(s.id,s);const d=logicalFor(s);rawToLogical.set(s.id,d.id);if(!stationMeta.has(d.id))stationMeta.set(d.id,{id:d.id,name:d.name,hub:d.hub,rawIds:new Set(),memberNames:new Set(),connections:new Set()});const m=stationMeta.get(d.id);m.rawIds.add(s.id);m.memberNames.add(String(s.name||s.id))}
-  for(const s of data.stations||[]){const a=rawToLogical.get(s.id),m=stationMeta.get(a);for(const rr of s.connections||[]){const b=rawToLogical.get(rr);if(b&&b!==a)m.connections.add(b)}}
-  function ensure(rawId,name){if(rawToLogical.has(rawId))return rawToLogical.get(rawId);const s=rawStation.get(rawId)||{id:rawId,name:name||rawId};const d=logicalFor(s);rawToLogical.set(rawId,d.id);if(!stationMeta.has(d.id))stationMeta.set(d.id,{id:d.id,name:d.name,hub:d.hub,rawIds:new Set([rawId]),memberNames:new Set([String(s.name||rawId)]),connections:new Set()});return d.id}
+  function logicalFor(s){
+    const n=norm(s.name);
+    if(visualGroups.has(n))return visualGroups.get(n);
+    return{id:`name:${n||s.id}`,name:String(s.name||s.id),hub:n==='folityn centralny'?'central':null};
+  }
+  for(const s of data.stations||[]){
+    rawStation.set(s.id,s); const d=logicalFor(s); rawToLogical.set(s.id,d.id);
+    if(!stationMeta.has(d.id))stationMeta.set(d.id,{id:d.id,name:d.name,hub:d.hub,rawIds:new Set(),memberNames:new Set(),connections:new Set()});
+    const m=stationMeta.get(d.id);m.rawIds.add(s.id);m.memberNames.add(String(s.name||s.id));
+  }
+  for(const s of data.stations||[]){
+    const a=rawToLogical.get(s.id),m=stationMeta.get(a);if(!m)continue;
+    for(const rr of s.connections||[]){const b=rawToLogical.get(rr);if(b&&b!==a)m.connections.add(b)}
+  }
+  function ensure(rawId,name){
+    if(rawToLogical.has(rawId))return rawToLogical.get(rawId);
+    const s=rawStation.get(rawId)||{id:rawId,name:name||rawId},d=logicalFor(s);rawToLogical.set(rawId,d.id);
+    if(!stationMeta.has(d.id))stationMeta.set(d.id,{id:d.id,name:d.name,hub:d.hub,rawIds:new Set([rawId]),memberNames:new Set([String(s.name||rawId)]),connections:new Set()});
+    return d.id;
+  }
+
   const occurrences=new Map(),services=[];
-  for(const r of data.routes||[]){if(r.hidden||!Array.isArray(r.stations)||r.stations.length<2)continue;const mode=modeOf(r.type);if(!mode)continue;const nodes=[];for(const st of r.stations){if(!st?.id||!Number.isFinite(+st.x)||!Number.isFinite(+st.z))continue;const id=ensure(st.id,st.name);if(nodes.at(-1)!==id)nodes.push(id);if(!occurrences.has(id))occurrences.set(id,[]);occurrences.get(id).push({x:+st.x,y:+st.z})}if(nodes.length>=2)services.push({id:r.id,label:String(r.name??r.number??r.id).trim(),mode,color:Number(r.color??0),nodes})}
-  const original=new Map();for(const[id,pts]of occurrences)original.set(id,{x:pts.reduce((s,p)=>s+p.x,0)/pts.length,y:pts.reduce((s,p)=>s+p.y,0)/pts.length});
+  for(const r of data.routes||[]){
+    if(r.hidden||!Array.isArray(r.stations)||r.stations.length<2)continue;
+    const mode=modeOf(r.type);if(!mode)continue;
+    const nodes=[];
+    for(const st of r.stations){
+      if(!st?.id||!Number.isFinite(+st.x)||!Number.isFinite(+st.z))continue;
+      const id=ensure(st.id,st.name);if(nodes.at(-1)!==id)nodes.push(id);
+      if(!occurrences.has(id))occurrences.set(id,[]);
+      occurrences.get(id).push({x:+st.x,y:+st.z});
+    }
+    if(nodes.length>=2)services.push({id:r.id,label:String(r.name??r.routeNumber??r.number??r.id).trim(),mode,color:Number(r.color??0),nodes});
+  }
+
+  const original=new Map();
+  for(const[id,pts]of occurrences)original.set(id,{x:pts.reduce((s,p)=>s+p.x,0)/pts.length,y:pts.reduce((s,p)=>s+p.y,0)/pts.length});
+
   const parent=services.map((_,i)=>i),find=i=>parent[i]===i?i:(parent[i]=find(parent[i])),union=(a,b)=>{a=find(a);b=find(b);if(a!==b)parent[b]=a};
   const overlap=(a,b)=>{const A=new Set(a),B=new Set(b);let n=0;for(const x of A)if(B.has(x))n++;return n/Math.max(1,Math.min(A.size,B.size))};
-  for(let i=0;i<services.length;i++)for(let j=i+1;j<services.length;j++){const a=services[i],b=services[j];if(a.mode!==b.mode)continue;if(norm(a.label)===norm(b.label)||(a.color===b.color&&overlap(a.nodes,b.nodes)>=.72))union(i,j)}
+  for(let i=0;i<services.length;i++)for(let j=i+1;j<services.length;j++){
+    const a=services[i],b=services[j];if(a.mode!==b.mode)continue;
+    if(norm(a.label)===norm(b.label)||(a.color===b.color&&overlap(a.nodes,b.nodes)>=.7))union(i,j);
+  }
   const clusters=new Map();services.forEach((s,i)=>{const k=find(i);if(!clusters.has(k))clusters.set(k,[]);clusters.get(k).push(s)});
   const groups=[];let gi=0;
   for(const list of clusters.values()){
-    const mode=list[0].mode,cc=new Map(),lc=new Map();for(const s of list){cc.set(s.color,(cc.get(s.color)||0)+1);lc.set(s.label,(lc.get(s.label)||0)+1)}
-    const color=[...cc].sort((a,b)=>b[1]-a[1])[0][0],label=[...lc].sort((a,b)=>b[1]-a[1])[0][0];
-    const edges=new Set(),nodes=new Set();for(const s of list){for(const n of s.nodes)nodes.add(n);for(let i=1;i<s.nodes.length;i++)edges.add(pairKey(s.nodes[i-1],s.nodes[i]))}
-    groups.push({id:`${mode}|${color}|${gi++}`,label,mode,color,services:list,edges,nodes})
+    const mode=list[0].mode,cc=new Map(),lc=new Map();
+    for(const s of list){cc.set(s.color,(cc.get(s.color)||0)+1);lc.set(s.label,(lc.get(s.label)||0)+1)}
+    const color=[...cc].sort((a,b)=>b[1]-a[1])[0][0],label=[...lc].sort((a,b)=>b[1]-a[1]||b[0].length-a[0].length)[0][0];
+    const edges=new Set(),nodes=new Set();
+    for(const s of list){for(const n of s.nodes)nodes.add(n);for(let i=1;i<s.nodes.length;i++)edges.add(pairKey(s.nodes[i-1],s.nodes[i]))}
+    groups.push({id:`${mode}|${color}|${gi++}`,label,mode,color,services:list,edges,nodes});
   }
-  groups.sort((a,b)=>(({high_speed:0,rail:1,light_rail:2}[a.mode]??9)-({high_speed:0,rail:1,light_rail:2}[b.mode]??9))||a.label.localeCompare(b.label,undefined,{numeric:true}));
-  const groupById=new Map(groups.map(g=>[g.id,g])),rank=new Map(groups.map((g,i)=>[g.id,i]));
+  groups.sort((a,b)=>modeOrder(a.mode)-modeOrder(b.mode)||a.label.localeCompare(b.label,undefined,{numeric:true}));
+  const rank=new Map(groups.map((g,i)=>[g.id,i])),groupById=new Map(groups.map(g=>[g.id,g]));
+
+  const physical=new Map();
+  for(const g of groups)for(const k of g.edges){
+    if(!physical.has(k)){const[a,b]=k.split('|');physical.set(k,{key:k,a,b,routes:new Set()})}
+    physical.get(k).routes.add(g.id);
+  }
+  const physAdj=new Map();
+  function rebuildAdj(){
+    physAdj.clear();
+    for(const e of physical.values()){
+      if(!physAdj.has(e.a))physAdj.set(e.a,[]);if(!physAdj.has(e.b))physAdj.set(e.b,[]);
+      physAdj.get(e.a).push(e);physAdj.get(e.b).push(e);
+    }
+  }
+  rebuildAdj();
+
+  function pointSegDistanceLocal(p,a,b){
+    const vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,vv=vx*vx+vy*vy;if(!vv)return dist(p,a);
+    const t=clamp((wx*vx+wy*vy)/vv,0,1);return Math.hypot(p.x-(a.x+vx*t),p.y-(a.y+vy*t));
+  }
+  function alternatePath(a,b,excludeKey){
+    const A=original.get(a),B=original.get(b);if(!A||!B)return null;
+    const direct=Math.max(1,dist(A,B)),stack=[{n:a,path:[a],len:0}],seenBest=new Map([[a,0]]);let best=null;
+    while(stack.length){
+      const cur=stack.pop();if(cur.path.length-1>=CFG.shortcutHops)continue;
+      for(const e of physAdj.get(cur.n)||[]){
+        if(e.key===excludeKey)continue;const nx=e.a===cur.n?e.b:e.a;if(cur.path.includes(nx))continue;
+        const P=original.get(cur.n),Q=original.get(nx);if(!P||!Q)continue;
+        const len=cur.len+dist(P,Q);if(len>direct*1.5)continue;
+        const path=[...cur.path,nx];
+        if(nx===b&&path.length>=3){
+          const mids=path.slice(1,-1).map(x=>original.get(x)).filter(Boolean);
+          const maxPerp=mids.length?Math.max(...mids.map(p=>pointSegDistanceLocal(p,A,B))):Infinity;
+          if(len/direct<=CFG.shortcutRatio&&maxPerp<=direct*CFG.shortcutPerp){
+            const score=len/direct+maxPerp/direct;if(!best||score<best.score)best={path,score};
+          }
+        }else if(len<(seenBest.get(nx)??Infinity)*1.1){seenBest.set(nx,len);stack.push({n:nx,path,len})}
+      }
+    }
+    return best?.path||null;
+  }
+
+  for(const g of groups){
+    const expanded=new Set();
+    for(const k of g.edges){
+      const[a,b]=k.split('|'),alt=alternatePath(a,b,k);
+      if(alt){for(let i=1;i<alt.length;i++)expanded.add(pairKey(alt[i-1],alt[i]))}else expanded.add(k);
+    }
+    g.edges=expanded;g.nodes=new Set([...expanded].flatMap(k=>k.split('|')));
+  }
+
   const edges=new Map(),nodeGroups=new Map(),endpoints=new Set();
-  for(const g of groups){for(const n of g.nodes){if(!nodeGroups.has(n))nodeGroups.set(n,new Set());nodeGroups.get(n).add(g.id)}for(const s of g.services){if(s.nodes.length){endpoints.add(s.nodes[0]);endpoints.add(s.nodes.at(-1))}}for(const k of g.edges){let e=edges.get(k);if(!e){const[a,b]=k.split('|');e={key:k,a,b,routes:new Set()};edges.set(k,e)}e.routes.add(g.id)}}
-  const lengths=[];for(const e of edges.values()){const a=original.get(e.a),b=original.get(e.b);if(a&&b)lengths.push(dist(a,b))}const scale=CFG.spacing/Math.max(1,median(lengths));const vals=[...original.values()],cx=vals.reduce((s,p)=>s+p.x,0)/Math.max(1,vals.length),cy=vals.reduce((s,p)=>s+p.y,0)/Math.max(1,vals.length);const geo=new Map();for(const[id,p]of original)geo.set(id,{x:(p.x-cx)*scale,y:(p.y-cy)*scale});
-  const byName=new Map([...stationMeta.values()].map(m=>[norm(m.name),m.id]));const wi=byName.get('wiadukt torowy'),rcm=byName.get('rogowska centrum miejskie');if(wi&&rcm&&geo.has(wi)&&geo.has(rcm)){const w=geo.get(wi),r=geo.get(rcm);if(w.y>=r.y)geo.set(wi,{x:w.x,y:r.y-Math.max(30,Math.abs(w.y-r.y))})}
+  for(const g of groups){
+    for(const n of g.nodes){if(!nodeGroups.has(n))nodeGroups.set(n,new Set());nodeGroups.get(n).add(g.id)}
+    for(const s of g.services){if(s.nodes.length){endpoints.add(s.nodes[0]);endpoints.add(s.nodes.at(-1))}}
+    for(const k of g.edges){
+      let e=edges.get(k);if(!e){const[a,b]=k.split('|');e={key:k,a,b,routes:new Set()};edges.set(k,e)}
+      e.routes.add(g.id);
+    }
+  }
+
+  const lengths=[];for(const e of edges.values()){const a=original.get(e.a),b=original.get(e.b);if(a&&b)lengths.push(dist(a,b))}
+  const scale=CFG.spacing/Math.max(1,median(lengths)),vals=[...original.values()],cx=vals.reduce((s,p)=>s+p.x,0)/Math.max(1,vals.length),cy=vals.reduce((s,p)=>s+p.y,0)/Math.max(1,vals.length);
+  const geo=new Map();for(const[id,p]of original)geo.set(id,{x:(p.x-cx)*scale,y:(p.y-cy)*scale});
+
+  const byName=new Map([...stationMeta.values()].map(m=>[norm(m.name),m.id]));
+  const wi=byName.get('wiadukt torowy'),rcm=byName.get('rogowska centrum miejskie');
+  if(wi&&rcm&&geo.has(wi)&&geo.has(rcm)){const w=geo.get(wi),r=geo.get(rcm);if(w.y>=r.y)geo.set(wi,{x:w.x,y:r.y-Math.max(30,Math.abs(w.y-r.y))})}
+
   return{stationMeta,groups,groupById,rank,edges,nodeGroups,endpoints,original,geo};
 }
 
-function edgeSignature(edge){return [...edge.routes].sort((a,b)=>(state.model.rank.get(a)??999)-(state.model.rank.get(b)??999)).join('~')}
-function buildCorridors(){
-  const bySig=new Map();for(const e of state.model.edges.values()){const sig=edgeSignature(e);if(!bySig.has(sig))bySig.set(sig,[]);bySig.get(sig).push(e)}
-  const corridors=[];
-  for(const[sig,elist]of bySig){const adj=new Map();for(const e of elist){if(!adj.has(e.a))adj.set(e.a,[]);if(!adj.has(e.b))adj.set(e.b,[]);adj.get(e.a).push({edge:e,other:e.b});adj.get(e.b).push({edge:e,other:e.a})}const visited=new Set(),starts=[...adj.keys()].filter(n=>adj.get(n).length!==2);
-    const walk=(s,first)=>{const nodes=[s],edges=[];let cur=s,link=first;while(link&&!visited.has(link.edge.key)){visited.add(link.edge.key);edges.push(link.edge);cur=link.other;nodes.push(cur);if((adj.get(cur)?.length||0)!==2)break;link=adj.get(cur).find(x=>!visited.has(x.edge.key))}if(edges.length)corridors.push({sig,routes:sig.split('~').filter(Boolean),nodes,edges})};
-    for(const s of starts)for(const l of adj.get(s)||[])if(!visited.has(l.edge.key))walk(s,l);for(const[s,list]of adj)for(const l of list)if(!visited.has(l.edge.key))walk(s,l)
-  }
-  return corridors;
+function buildTopology(model){
+  const adj=new Map([...model.geo.keys()].map(id=>[id,[]]));
+  for(const e of model.edges.values()){if(!adj.has(e.a))adj.set(e.a,[]);if(!adj.has(e.b))adj.set(e.b,[]);adj.get(e.a).push(e);adj.get(e.b).push(e)}
+  return adj;
 }
 function pointSegDistance(p,a,b){const vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y,vv=vx*vx+vy*vy;if(!vv)return dist(p,a);const t=clamp((wx*vx+wy*vy)/vv,0,1);return Math.hypot(p.x-(a.x+vx*t),p.y-(a.y+vy*t))}
 function projectToSeg(p,a,b){const vx=b.x-a.x,vy=b.y-a.y,vv=vx*vx+vy*vy;if(!vv)return{...a};const t=clamp(((p.x-a.x)*vx+(p.y-a.y)*vy)/vv,0,1);return{x:a.x+vx*t,y:a.y+vy*t}}
-function corridorPoints(c){
-  const pts=c.nodes.map(n=>({...state.pos.get(n)}));if(pts.length<3)return pts;
-  const out=[pts[0]];let i=0;
-  while(i<pts.length-1){let best=i+1;for(let j=i+2;j<pts.length;j++){const a=pts[i],b=pts[j],base=Math.max(1,dist(a,b));let ok=true;for(let k=i+1;k<j;k++){if(pointSegDistance(pts[k],a,b)>base*CFG.collinearTol){ok=false;break}}if(ok)best=j;else break}const a=pts[i],b=pts[best];for(let k=i+1;k<best;k++){const q=projectToSeg(pts[k],a,b);state.displayPos.set(c.nodes[k],q)}out.push({...b});i=best}
+function snapAngleVector(a,b){
+  const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy);if(L<.001)return{...b};
+  const ang=Math.atan2(dy,dx),snap=Math.round(ang/CFG.snapStep)*CFG.snapStep;
+  let err=Math.abs(((ang-snap+Math.PI)%(2*Math.PI))-Math.PI);
+  if(err>CFG.snapMaxError)return{...b};
+  return{x:a.x+Math.cos(snap)*L,y:a.y+Math.sin(snap)*L};
+}
+function preprocessPositions(model){
+  const pos=new Map([...model.geo].map(([k,p])=>[k,{...p}])),adj=buildTopology(model);
+  for(let pass=0;pass<3;pass++){
+    for(const[n,links]of adj){
+      if(links.length!==2)continue;
+      const a=links[0].a===n?links[0].b:links[0].a,b=links[1].a===n?links[1].b:links[1].a;
+      const A=pos.get(a),P=pos.get(n),B=pos.get(b);if(!A||!P||!B)continue;
+      const base=Math.max(1,dist(A,B)),perp=pointSegDistance(P,A,B);
+      if(perp<=base*CFG.straightTol)pos.set(n,projectToSeg(P,A,B));
+    }
+  }
+  return pos;
+}
+function tracePhysicalCorridors(model){
+  const adj=buildTopology(model),visited=new Set(),corr=[];
+  const starts=[...adj.keys()].filter(n=>(adj.get(n)?.length||0)!==2);
+  const walk=(s,first)=>{
+    const nodes=[s],edges=[];let cur=s,e=first;
+    while(e&&!visited.has(e.key)){
+      visited.add(e.key);edges.push(e);cur=e.a===cur?e.b:e.a;nodes.push(cur);
+      if((adj.get(cur)?.length||0)!==2)break;
+      e=adj.get(cur).find(x=>!visited.has(x.key));
+    }
+    if(edges.length)corr.push({nodes,edges});
+  };
+  for(const s of starts)for(const e of adj.get(s)||[])if(!visited.has(e.key))walk(s,e);
+  for(const[s,list]of adj)for(const e of list)if(!visited.has(e.key))walk(s,e);
+  return corr;
+}
+function corridorGeometry(c){
+  const raw=c.nodes.map(n=>state.pos.get(n)).filter(Boolean);if(raw.length<2)return raw;
+  const out=[{...raw[0]}];let i=0;
+  while(i<raw.length-1){
+    let best=i+1;
+    for(let j=i+2;j<raw.length;j++){
+      const A=raw[i],B=raw[j],base=Math.max(1,dist(A,B));
+      let ok=true;for(let k=i+1;k<j;k++)if(pointSegDistance(raw[k],A,B)>base*CFG.straightTol){ok=false;break}
+      if(ok)best=j;else break;
+    }
+    const A=out.at(-1),rawB=raw[best],B=snapAngleVector(A,rawB);
+    const endpointNode=c.nodes[best],degree=state.model.topology.get(endpointNode)?.length||0;
+    const useB=(degree!==2&&dist(B,rawB)>Math.max(8,dist(A,rawB)*.08))?rawB:B;
+    for(let k=i+1;k<best;k++)state.displayPos.set(c.nodes[k],projectToSeg(raw[k],A,useB));
+    state.displayPos.set(endpointNode,{...useB});out.push({...useB});i=best;
+  }
   return out;
 }
-function roundedPath(points,r=CFG.curve){if(points.length<2)return'';if(points.length===2)return`M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;let d=`M ${points[0].x} ${points[0].y}`;for(let i=1;i<points.length-1;i++){const a=points[i-1],b=points[i],c=points[i+1],l1=dist(a,b),l2=dist(b,c);if(l1<.01||l2<.01)continue;const rr=Math.min(r,l1*.32,l2*.32),u1={x:(b.x-a.x)/l1,y:(b.y-a.y)/l1},u2={x:(c.x-b.x)/l2,y:(c.y-b.y)/l2},pin={x:b.x-u1.x*rr,y:b.y-u1.y*rr},pout={x:b.x+u2.x*rr,y:b.y+u2.y*rr};d+=` L ${pin.x} ${pin.y} Q ${b.x} ${b.y} ${pout.x} ${pout.y}`}const z=points.at(-1);return d+` L ${z.x} ${z.y}`}
-function offsetPolyline(points,off){if(Math.abs(off)<.001)return points.map(p=>({...p}));const normals=[];for(let i=1;i<points.length;i++){const dx=points[i].x-points[i-1].x,dy=points[i].y-points[i-1].y,l=Math.max(.001,Math.hypot(dx,dy));normals.push({x:-dy/l,y:dx/l})}return points.map((p,i)=>{let n;if(i===0)n=normals[0];else if(i===points.length-1)n=normals.at(-1);else{const x=normals[i-1].x+normals[i].x,y=normals[i-1].y+normals[i].y,l=Math.hypot(x,y);n=l<.001?normals[i]:{x:x/l,y:y/l}}return{x:p.x+n.x*off,y:p.y+n.y*off}})}
+function roundedPath(points,r=CFG.curve){
+  if(points.length<2)return'';if(points.length===2)return`M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+  let d=`M ${points[0].x} ${points[0].y}`;
+  for(let i=1;i<points.length-1;i++){
+    const a=points[i-1],b=points[i],c=points[i+1],l1=dist(a,b),l2=dist(b,c);if(l1<.01||l2<.01)continue;
+    const rr=Math.min(r,l1*.3,l2*.3),u1={x:(b.x-a.x)/l1,y:(b.y-a.y)/l1},u2={x:(c.x-b.x)/l2,y:(c.y-b.y)/l2};
+    const pin={x:b.x-u1.x*rr,y:b.y-u1.y*rr},pout={x:b.x+u2.x*rr,y:b.y+u2.y*rr};
+    d+=` L ${pin.x} ${pin.y} Q ${b.x} ${b.y} ${pout.x} ${pout.y}`;
+  }
+  const z=points.at(-1);return d+` L ${z.x} ${z.y}`;
+}
+function offsetPolyline(points,off){
+  if(Math.abs(off)<.001)return points.map(p=>({...p}));
+  const normals=[];for(let i=1;i<points.length;i++){const dx=points[i].x-points[i-1].x,dy=points[i].y-points[i-1].y,l=Math.max(.001,Math.hypot(dx,dy));normals.push({x:-dy/l,y:dx/l})}
+  return points.map((p,i)=>{let n;if(i===0)n=normals[0];else if(i===points.length-1)n=normals.at(-1);else{const x=normals[i-1].x+normals[i].x,y=normals[i-1].y+normals[i].y,l=Math.hypot(x,y);n=l<.001?normals[i]:{x:x/l,y:y/l}}return{x:p.x+n.x*off,y:p.y+n.y*off}});
+}
 
-function createOverlay(){const w=state.wrapper;w.style.position=w.style.position||'relative';const ov=document.createElement('div');ov.id='folityn-v6-overlay';ov.style.cssText='position:absolute;inset:0;z-index:30;overflow:hidden;cursor:grab;user-select:none;touch-action:none;';const svg=svgEl('svg',{width:'100%',height:'100%',xmlns:NS});svg.style.display='block';ov.appendChild(svg);w.appendChild(ov);const bg=svgEl('rect',{x:-100000,y:-100000,width:200000,height:200000}),root=svgEl('g'),routes=svgEl('g'),stops=svgEl('g'),labels=svgEl('g'),hits=svgEl('g');root.append(routes,stops,labels,hits);svg.append(bg,root);state.overlay=ov;state.svg=svg;state.layers={bg,root,routes,stops,labels,hits}}
-function computeBounds(){const v=[...state.displayPos.values()];const minX=Math.min(...v.map(p=>p.x))-CFG.pad,maxX=Math.max(...v.map(p=>p.x))+CFG.pad,minY=Math.min(...v.map(p=>p.y))-CFG.pad,maxY=Math.max(...v.map(p=>p.y))+CFG.pad;return{x:minX,y:minY,w:maxX-minX,h:maxY-minY}}
+function computeFixedLaneIndex(model){
+  const conflict=new Map(model.groups.map(g=>[g.id,new Set()]));
+  for(const e of model.edges.values()){
+    const ids=[...e.routes];for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){conflict.get(ids[i])?.add(ids[j]);conflict.get(ids[j])?.add(ids[i])}
+  }
+  const order=[...model.groups].sort((a,b)=>(conflict.get(b.id)?.size||0)-(conflict.get(a.id)?.size||0)||(model.rank.get(a.id)??999)-(model.rank.get(b.id)??999));
+  const idx=new Map();
+  for(const g of order){
+    const used=new Set([...(conflict.get(g.id)||[])].map(x=>idx.get(x)).filter(x=>x!==undefined));
+    let v=0;while(used.has(v))v++;idx.set(g.id,v);
+  }
+  return idx;
+}
+function laneOffsetForEdge(edge,id){
+  const ids=[...edge.routes].filter(r=>state.visible.has(state.model.groupById.get(r)?.mode)).sort((a,b)=>(state.model.laneIndex.get(a)??0)-(state.model.laneIndex.get(b)??0));
+  if(ids.length<=1)return 0;
+  const vals=ids.map(x=>state.model.laneIndex.get(x)??0),mid=(Math.min(...vals)+Math.max(...vals))/2;
+  return((state.model.laneIndex.get(id)??0)-mid)*CFG.laneGap;
+}
+
+function createOverlay(){
+  const w=state.wrapper;w.style.position=w.style.position||'relative';
+  const ov=document.createElement('div');ov.id='folityn-v61-overlay';ov.style.cssText='position:absolute;inset:0;z-index:30;overflow:hidden;cursor:grab;user-select:none;touch-action:none;';
+  const svg=svgEl('svg',{width:'100%',height:'100%',xmlns:NS});svg.style.display='block';ov.appendChild(svg);w.appendChild(ov);
+  const bg=svgEl('rect',{x:-100000,y:-100000,width:200000,height:200000}),root=svgEl('g'),routes=svgEl('g'),stops=svgEl('g'),labels=svgEl('g'),hits=svgEl('g');
+  root.append(routes,stops,labels,hits);svg.append(bg,root);state.overlay=ov;state.svg=svg;state.layers={bg,root,routes,stops,labels,hits};
+}
+function computeBounds(){const v=[...state.displayPos.values()];if(!v.length)return{x:-500,y:-500,w:1000,h:1000};const minX=Math.min(...v.map(p=>p.x))-CFG.pad,maxX=Math.max(...v.map(p=>p.x))+CFG.pad,minY=Math.min(...v.map(p=>p.y))-CFG.pad,maxY=Math.max(...v.map(p=>p.y))+CFG.pad;return{x:minX,y:minY,w:maxX-minX,h:maxY-minY}}
 function applyView(){const v=state.view||state.fitView;if(v)state.svg.setAttribute('viewBox',`${v.x} ${v.y} ${v.w} ${v.h}`)}
 function fit(){state.fitView=computeBounds();state.view={...state.fitView};applyView()}
-function visibleRoutes(ids){return ids.filter(id=>state.visible.has(state.model.groupById.get(id)?.mode)).sort((a,b)=>(state.model.rank.get(a)??999)-(state.model.rank.get(b)??999))}
 
-function drawRoutes(){const g=state.layers.routes,h=state.layers.hits;g.textContent='';h.textContent='';state.displayPos=new Map([...state.pos].map(([k,p])=>[k,{...p}]));const corridors=buildCorridors();
-  for(const c of corridors){const routeIds=visibleRoutes(c.routes);if(!routeIds.length)continue;const center=corridorPoints(c);if(center.length<2)continue;routeIds.forEach((id,idx)=>{const r=state.model.groupById.get(id),off=(idx-(routeIds.length-1)/2)*CFG.laneGap,pts=offsetPolyline(center,off),selected=state.selectedRoute===id,dim=state.selectedRoute&&!selected,w=(r.mode==='high_speed'?5.6:r.mode==='rail'?5.2:4.8)+(selected?2:0);const p=svgEl('path',{d:roundedPath(pts),fill:'none',stroke:colorHex(r.color),'stroke-width':w,'stroke-linecap':'round','stroke-linejoin':'round',opacity:dim?.15:1});g.appendChild(p);const hit=svgEl('path',{d:roundedPath(pts),fill:'none',stroke:'transparent','stroke-width':Math.max(14,w+8),'pointer-events':'stroke','data-route-hit':id});hit.style.cursor='pointer';hit.addEventListener('click',e=>{e.stopPropagation();state.selectedRoute=id;showRoutePanel(id);render()});h.appendChild(hit)})}
+function drawRoutes(){
+  const g=state.layers.routes,h=state.layers.hits;g.textContent='';h.textContent='';
+  state.displayPos=new Map([...state.pos].map(([k,p])=>[k,{...p}]));
+  const corridors=tracePhysicalCorridors(state.model);
+  for(const c of corridors){
+    const center=corridorGeometry(c);if(center.length<2)continue;
+    for(let ei=0;ei<c.edges.length;ei++){
+      const edge=c.edges[ei],A=state.displayPos.get(edge.a)||state.pos.get(edge.a),B=state.displayPos.get(edge.b)||state.pos.get(edge.b);if(!A||!B)continue;
+      const seg=[A,B],ids=[...edge.routes].filter(id=>state.visible.has(state.model.groupById.get(id)?.mode)).sort((a,b)=>(state.model.laneIndex.get(a)??0)-(state.model.laneIndex.get(b)??0));
+      for(const id of ids){
+        const r=state.model.groupById.get(id),pts=offsetPolyline(seg,laneOffsetForEdge(edge,id)),selected=state.selectedRoute===id,dim=state.selectedRoute&&!selected;
+        const width=(r.mode==='high_speed'?5.6:r.mode==='rail'?5.2:4.8)+(selected?2:0),d=roundedPath(pts);
+        const p=svgEl('path',{d,fill:'none',stroke:colorHex(r.color),'stroke-width':width,'stroke-linecap':'round','stroke-linejoin':'round',opacity:dim?.15:1});g.appendChild(p);
+        const hit=svgEl('path',{d,fill:'none',stroke:'transparent','stroke-width':Math.max(16,width+10),'pointer-events':'stroke','data-route-hit':id});hit.style.cursor='pointer';
+        hit.addEventListener('click',e=>{e.stopPropagation();state.selectedRoute=id;showRoutePanel(id);render()});h.appendChild(hit);
+      }
+    }
+  }
 }
-function drawCentralIcon(group,p,size){const fg=state.dark?'#eef3fb':'#172033',bg=state.dark?'#0f1828':'#fff';group.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:size,fill:bg,stroke:fg,'stroke-width':3}));group.appendChild(svgEl('rect',{x:p.x-size*.5,y:p.y-size*.42,width:size*.55,height:size*.58,rx:3,fill:'none',stroke:fg,'stroke-width':2}));group.appendChild(svgEl('line',{x1:p.x-size*.38,y1:p.y-size*.11,x2:p.x-size*.07,y2:p.y-size*.11,stroke:fg,'stroke-width':2}));group.appendChild(svgEl('circle',{cx:p.x-size*.35,cy:p.y+size*.25,r:2.2,fill:fg}));group.appendChild(svgEl('circle',{cx:p.x-size*.05,cy:p.y+size*.25,r:2.2,fill:fg}));group.appendChild(svgEl('rect',{x:p.x+size*.08,y:p.y-size*.35,width:size*.48,height:size*.5,rx:3,fill:'none',stroke:fg,'stroke-width':2}));group.appendChild(svgEl('line',{x1:p.x+size*.16,y1:p.y-size*.1,x2:p.x+size*.47,y2:p.y-size*.1,stroke:fg,'stroke-width':2}))}
+
+function stationOrientation(node){
+  const links=state.model.topology.get(node)||[],p=state.displayPos.get(node)||state.pos.get(node);if(!p||!links.length)return 0;
+  const dirs=[];
+  for(const e of links){
+    const o=e.a===node?e.b:e.a,q=state.displayPos.get(o)||state.pos.get(o);if(!q)continue;
+    const ang=Math.atan2(q.y-p.y,q.x-p.x),weight=Math.max(1,e.routes.size);dirs.push({ang,weight});
+  }
+  if(!dirs.length)return 0;
+  let sx=0,sy=0;for(const d of dirs){sx+=Math.cos(2*d.ang)*d.weight;sy+=Math.sin(2*d.ang)*d.weight}
+  let a=.5*Math.atan2(sy,sx);return Math.round(a/CFG.snapStep)*CFG.snapStep;
+}
+function directionBucketCount(node){
+  const links=state.model.topology.get(node)||[],p=state.displayPos.get(node)||state.pos.get(node);if(!p)return 0;
+  const s=new Set();for(const e of links){const o=e.a===node?e.b:e.a,q=state.displayPos.get(o)||state.pos.get(o);if(!q)continue;let a=Math.atan2(q.y-p.y,q.x-p.x);a=((a%(Math.PI*2))+Math.PI*2)%(Math.PI*2);s.add(Math.round(a/CFG.snapStep)%16)}
+  return s.size;
+}
+function addTrainBusIcon(group,p,size){
+  const fg=state.dark?'#eef3fb':'#172033',bg=state.dark?'#0f1828':'#fff';
+  group.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:size,fill:bg,stroke:fg,'stroke-width':3}));
+  group.appendChild(svgEl('rect',{x:p.x-size*.55,y:p.y-size*.38,width:size*.52,height:size*.62,rx:size*.12,fill:'none',stroke:fg,'stroke-width':2}));
+  group.appendChild(svgEl('line',{x1:p.x-size*.45,y1:p.y-size*.08,x2:p.x-size*.14,y2:p.y-size*.08,stroke:fg,'stroke-width':2}));
+  group.appendChild(svgEl('circle',{cx:p.x-size*.43,cy:p.y+size*.28,r:2,fill:fg}));group.appendChild(svgEl('circle',{cx:p.x-size*.14,cy:p.y+size*.28,r:2,fill:fg}));
+  group.appendChild(svgEl('rect',{x:p.x+size*.05,y:p.y-size*.32,width:size*.5,height:size*.48,rx:size*.08,fill:'none',stroke:fg,'stroke-width':2}));
+  group.appendChild(svgEl('line',{x1:p.x+size*.14,y1:p.y-size*.1,x2:p.x+size*.46,y2:p.y-size*.1,stroke:fg,'stroke-width':2}));
+  group.appendChild(svgEl('circle',{cx:p.x+size*.17,cy:p.y+size*.22,r:2,fill:fg}));group.appendChild(svgEl('circle',{cx:p.x+size*.45,cy:p.y+size*.22,r:2,fill:fg}));
+}
 function rectsOverlap(a,b,g=3){return!(a.x+a.w+g<b.x||b.x+b.w+g<a.x||a.y+a.h+g<b.y||b.y+b.h+g<a.y)}
-function drawStopsAndLabels(){const sg=state.layers.stops,lg=state.layers.labels,hg=state.layers.hits;sg.textContent='';lg.textContent='';const bg=state.dark?'#0f1828':'#fff',fg=state.dark?'#eef3fb':'#172033',occupied=[],labels=[];
-  for(const[node,idsSet]of state.model.nodeGroups){const ids=[...idsSet].filter(id=>state.visible.has(state.model.groupById.get(id)?.mode));if(!ids.length)continue;const p=state.displayPos.get(node)||state.pos.get(node),m=state.model.stationMeta.get(node);if(!p||!m)continue;const central=m.hub==='central',wity=m.hub==='wity',major=central||wity||ids.length>=3||m.connections.size>0;if(central){drawCentralIcon(sg,p,21);occupied.push({x:p.x-24,y:p.y-24,w:48,h:48})}else if(wity){drawCentralIcon(sg,p,15);occupied.push({x:p.x-18,y:p.y-18,w:36,h:36})}else if(major){const w=clamp(26+ids.length*4,32,58);sg.appendChild(svgEl('rect',{x:p.x-w/2,y:p.y-8,width:w,height:16,rx:8,fill:bg,stroke:fg,'stroke-width':2}));occupied.push({x:p.x-w/2-2,y:p.y-10,w:w+4,h:20})}else{sg.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:4.6,fill:bg,stroke:fg,'stroke-width':1.8}));occupied.push({x:p.x-7,y:p.y-7,w:14,h:14})}
-    const hit=svgEl('circle',{cx:p.x,cy:p.y,r:central?28:wity?22:16,fill:'transparent','pointer-events':'all','data-station-hit':node});hit.style.cursor='pointer';hit.addEventListener('click',e=>{e.stopPropagation();state.selectedRoute=null;showStationPanel(node);render()});hg.appendChild(hit);
-    let show=state.labels==='all';if(state.labels==='key')show=major||state.model.endpoints.has(node);if(show)labels.push({node,p,text:m.name,fs:central?14:wity?12.5:major?11.5:10.5,force:central||wity,priority:central?100:wity?90:major?60:20})}
-  labels.sort((a,b)=>b.priority-a.priority);const candidates=[[10,-16,'start'],[10,18,'start'],[-10,-16,'end'],[-10,18,'end'],[0,-23,'middle'],[0,27,'middle']];const placed=[];for(const it of labels){const w=Math.max(28,it.text.length*it.fs*.56),hh=it.fs+4;let c=null;for(const[dx,dy,anchor]of candidates){const x=it.p.x+dx,y=it.p.y+dy,bx=anchor==='end'?x-w:anchor==='middle'?x-w/2:x,box={x:bx,y:y-hh,w,h:hh};if(![...occupied,...placed.map(x=>x.box)].some(o=>rectsOverlap(box,o))){c={x,y,anchor,box};break}}if(!c&&!it.force)continue;if(!c){const[dx,dy,anchor]=candidates[0];c={x:it.p.x+dx,y:it.p.y+dy,anchor,box:{x:it.p.x+dx,y:it.p.y+dy-hh,w,h:hh}}}placed.push({...it,...c})}
+
+function drawStopsAndLabels(){
+  const sg=state.layers.stops,lg=state.layers.labels,hg=state.layers.hits;sg.textContent='';lg.textContent='';
+  const bg=state.dark?'#0f1828':'#fff',fg=state.dark?'#eef3fb':'#172033',occupied=[],labels=[];
+  for(const[node,idsSet]of state.model.nodeGroups){
+    const ids=[...idsSet].filter(id=>state.visible.has(state.model.groupById.get(id)?.mode));if(!ids.length)continue;
+    const p=state.displayPos.get(node)||state.pos.get(node),m=state.model.stationMeta.get(node);if(!p||!m)continue;
+    const central=m.hub==='central',wity=m.hub==='wity',jam=m.hub==='jamnikowsko',buckets=directionBucketCount(node);
+    const major=central||wity||jam||ids.length>=3||m.connections.size>0;
+    const angle=stationOrientation(node)*180/Math.PI;
+    if(central){addTrainBusIcon(sg,p,22);occupied.push({x:p.x-25,y:p.y-25,w:50,h:50})}
+    else if(wity||jam){addTrainBusIcon(sg,p,wity?16:14);occupied.push({x:p.x-19,y:p.y-19,w:38,h:38})}
+    else if(major&&buckets>=4){
+      const size=18+Math.min(8,ids.length*2);const r=svgEl('rect',{x:p.x-size/2,y:p.y-size/2,width:size,height:size,rx:3,fill:bg,stroke:fg,'stroke-width':2.2});sg.appendChild(r);occupied.push({x:p.x-size/2-2,y:p.y-size/2-2,w:size+4,h:size+4});
+    }else if(major){
+      const w=clamp(28+ids.length*4,34,60),h=15;const r=svgEl('rect',{x:p.x-w/2,y:p.y-h/2,width:w,height:h,rx:h/2,fill:bg,stroke:fg,'stroke-width':2,transform:`rotate(${angle} ${p.x} ${p.y})`});sg.appendChild(r);
+      occupied.push({x:p.x-w/2-3,y:p.y-w/2-3,w:w+6,h:w+6});
+    }else{
+      sg.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:4.5,fill:bg,stroke:fg,'stroke-width':1.8}));occupied.push({x:p.x-7,y:p.y-7,w:14,h:14});
+    }
+    const hit=svgEl('circle',{cx:p.x,cy:p.y,r:central?30:wity||jam?23:18,fill:'transparent','pointer-events':'all','data-station-hit':node});hit.style.cursor='pointer';
+    hit.addEventListener('click',e=>{e.stopPropagation();state.selectedRoute=null;showStationPanel(node);render()});hg.appendChild(hit);
+    let show=state.labels==='all';if(state.labels==='key')show=major||state.model.endpoints.has(node);
+    if(show)labels.push({node,p,text:m.name,fs:central?14:wity||jam?12.5:major?11.5:10.5,force:central||wity||jam,priority:central?100:wity?90:jam?85:major?60:20});
+  }
+  labels.sort((a,b)=>b.priority-a.priority);
+  const candidates=[[11,-17,'start'],[11,20,'start'],[-11,-17,'end'],[-11,20,'end'],[0,-25,'middle'],[0,29,'middle']],placed=[];
+  for(const it of labels){
+    const w=Math.max(30,it.text.length*it.fs*.56),hh=it.fs+5;let c=null;
+    for(const[dx,dy,anchor]of candidates){const x=it.p.x+dx,y=it.p.y+dy,bx=anchor==='end'?x-w:anchor==='middle'?x-w/2:x,box={x:bx,y:y-hh,w,h:hh};if(![...occupied,...placed.map(x=>x.box)].some(o=>rectsOverlap(box,o))){c={x,y,anchor,box};break}}
+    if(!c&&!it.force)continue;if(!c){const[dx,dy,anchor]=candidates[0];c={x:it.p.x+dx,y:it.p.y+dy,anchor,box:{x:it.p.x+dx,y:it.p.y+dy-hh,w,h:hh}}}
+    placed.push({...it,...c});
+  }
   for(const it of placed){const t=svgEl('text',{x:it.x,y:it.y,'text-anchor':it.anchor,fill:fg,'font-size':it.fs,'font-family':'Arial, sans-serif','font-weight':it.force?700:500,'paint-order':'stroke',stroke:bg,'stroke-width':3});t.textContent=it.text;lg.appendChild(t)}
 }
 function render(){state.layers.bg.setAttribute('fill',state.dark?'#0f1828':'#f7f8fa');drawRoutes();drawStopsAndLabels()}
 
-function panelBase(title){if(!state.panel){const p=document.createElement('div');p.style.cssText='position:fixed;right:18px;top:64px;z-index:100002;width:320px;max-height:calc(100vh - 90px);overflow:auto;background:rgba(12,18,30,.98);color:#eef3fb;border:1px solid #ffffff22;border-radius:14px;padding:14px;box-shadow:0 12px 36px #0009;font:13px/1.4 Arial,sans-serif;';document.body.appendChild(p);state.panel=p}state.panel.style.display='block';state.panel.innerHTML=`<button id="fol-x" style="float:right;border:0;background:#25324a;color:#fff;border-radius:7px;padding:3px 7px;cursor:pointer">×</button><div style="font-size:17px;font-weight:750;margin:0 34px 10px 0">${title}</div><div id="fol-body"></div>`;state.panel.querySelector('#fol-x').onclick=()=>{state.panel.style.display='none';state.selectedRoute=null;render()};return state.panel.querySelector('#fol-body')}
-function showStationPanel(node){const m=state.model.stationMeta.get(node),raw=state.model.original.get(node);if(!m)return;const body=panelBase(m.name),routes=[...(state.model.nodeGroups.get(node)||[])].map(id=>state.model.groupById.get(id)).filter(Boolean);body.innerHTML=`${m.memberNames.size>1?`<div style="opacity:.65;font-size:11px;text-transform:uppercase">Grouped MTR stops</div>${[...m.memberNames].map(x=>`<div>• ${x}</div>`).join('')}`:''}${raw?`<div style="opacity:.65;margin:8px 0">Minecraft X ${Math.round(raw.x)} · Z ${Math.round(raw.y)}</div>`:''}<div style="opacity:.65;font-size:11px;text-transform:uppercase;margin-top:9px">Services</div><div id="srv" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:5px"></div>`;const w=body.querySelector('#srv');for(const r of routes){const b=document.createElement('button');b.textContent=r.label;b.style.cssText=`border:0;border-left:5px solid ${colorHex(r.color)};background:#ffffff12;color:#fff;padding:5px 8px;border-radius:6px;cursor:pointer`;b.onclick=()=>{state.selectedRoute=r.id;showRoutePanel(r.id);render()};w.appendChild(b)}}
-function showRoutePanel(id){const r=state.model.groupById.get(id);if(!r)return;const body=panelBase(`${r.label}`),names=[...r.nodes].map(n=>state.model.stationMeta.get(n)?.name||n);body.innerHTML=`<div style="opacity:.7;margin-bottom:8px">${modeLabel(r.mode)} · ${names.length} stations</div><div style="display:flex;flex-wrap:wrap;gap:5px">${names.map(n=>`<span style="background:#ffffff12;border-radius:6px;padding:3px 6px">${n}</span>`).join('')}</div>`}
-function buildControls(){const box=document.createElement('div');box.style.cssText='position:fixed;left:14px;bottom:14px;z-index:99999;background:rgba(12,18,30,.94);color:#fff;padding:12px 13px;border-radius:12px;font:13px/1.35 Arial,sans-serif;box-shadow:0 6px 24px #0008;min-width:215px;';box.innerHTML='<div style="font-weight:700;font-size:14px">Folityn schematic v6</div><div style="opacity:.7;font-size:11px;margin:2px 0 9px">corridor-first · clickable</div>';for(const[m,l]of[['light_rail','Light Rail'],['rail','Rail'],['high_speed','High Speed']]){const row=document.createElement('label');row.style.cssText='display:block;margin:5px 0';const cb=document.createElement('input');cb.type='checkbox';cb.checked=state.visible.has(m);cb.style.marginRight='7px';cb.onchange=()=>{cb.checked?state.visible.add(m):state.visible.delete(m);localStorage.setItem(KEY+'modes',JSON.stringify([...state.visible]));render()};row.append(cb,document.createTextNode(l));box.appendChild(row)}const s=document.createElement('select');s.style.cssText='width:100%;margin:7px 0;padding:5px;background:#172033;color:#fff;border:1px solid #ffffff33;border-radius:6px';s.innerHTML='<option value="key">Key labels</option><option value="all">All labels</option><option value="none">No labels</option>';s.value=state.labels;s.onchange=()=>{state.labels=s.value;localStorage.setItem(KEY+'labels',state.labels);render()};box.appendChild(s);const row=document.createElement('div');row.style.cssText='display:flex;gap:6px';const b=document.createElement('button');b.textContent='Fit';b.style.cssText='flex:1;padding:6px;border:0;border-radius:7px;background:#25324a;color:#fff';b.onclick=fit;row.appendChild(b);box.appendChild(row);document.body.appendChild(box)}
-function installInteraction(){const ov=state.overlay;ov.addEventListener('mousedown',e=>{if(e.button!==0||e.target?.dataset?.stationHit||e.target?.dataset?.routeHit)return;state.drag={x:e.clientX,y:e.clientY,view:{...state.view}};ov.style.cursor='grabbing'});window.addEventListener('mousemove',e=>{if(!state.drag)return;if(!(e.buttons&1)){state.drag=null;ov.style.cursor='grab';return}const r=ov.getBoundingClientRect(),dx=(e.clientX-state.drag.x)*state.drag.view.w/Math.max(1,r.width),dy=(e.clientY-state.drag.y)*state.drag.view.h/Math.max(1,r.height);state.view={...state.drag.view,x:state.drag.view.x-dx,y:state.drag.view.y-dy};applyView()});window.addEventListener('mouseup',()=>{state.drag=null;ov.style.cursor='grab'});ov.addEventListener('wheel',e=>{e.preventDefault();const r=ov.getBoundingClientRect(),mx=(e.clientX-r.left)/r.width,my=(e.clientY-r.top)/r.height,f=Math.exp(e.deltaY*.0012),o=state.view,nw=clamp(o.w*f,state.fitView.w*.07,state.fitView.w*8),nh=nw*o.h/o.w;state.view={x:o.x+mx*(o.w-nw),y:o.y+my*(o.h-nh),w:nw,h:nh};applyView()},{passive:false});ov.addEventListener('dblclick',fit);ov.addEventListener('click',e=>{if(e.target===ov||e.target===state.svg||e.target===state.layers.bg){state.selectedRoute=null;if(state.panel)state.panel.style.display='none';render()}})}
-async function init(){try{state.wrapper=await waitForMap();state.model=buildModel(await loadNetwork());state.pos=new Map([...state.model.geo].map(([k,p])=>[k,{...p}]));state.displayPos=new Map([...state.pos].map(([k,p])=>[k,{...p}]));createOverlay();fit();render();buildControls();installInteraction()}catch(e){console.error('[Folityn v6]',e)}}
+function panelBase(title){
+  if(!state.panel){const p=document.createElement('div');p.style.cssText='position:fixed;right:18px;top:64px;z-index:100002;width:320px;max-height:calc(100vh - 90px);overflow:auto;background:rgba(12,18,30,.98);color:#eef3fb;border:1px solid #ffffff22;border-radius:14px;padding:14px;box-shadow:0 12px 36px #0009;font:13px/1.4 Arial,sans-serif;';document.body.appendChild(p);state.panel=p}
+  state.panel.style.display='block';state.panel.innerHTML=`<button id="fol-x" style="float:right;border:0;background:#25324a;color:#fff;border-radius:7px;padding:3px 7px;cursor:pointer">×</button><div style="font-size:17px;font-weight:750;margin:0 34px 10px 0">${title}</div><div id="fol-body"></div>`;
+  state.panel.querySelector('#fol-x').onclick=()=>{state.panel.style.display='none';state.selectedRoute=null;render()};return state.panel.querySelector('#fol-body');
+}
+function showStationPanel(node){
+  const m=state.model.stationMeta.get(node),raw=state.model.original.get(node);if(!m)return;const body=panelBase(m.name),routes=[...(state.model.nodeGroups.get(node)||[])].map(id=>state.model.groupById.get(id)).filter(Boolean);
+  body.innerHTML=`${m.memberNames.size>1?`<div style="opacity:.65;font-size:11px;text-transform:uppercase">Grouped MTR stops</div>${[...m.memberNames].map(x=>`<div>• ${x}</div>`).join('')}`:''}${raw?`<div style="opacity:.65;margin:8px 0">Minecraft X ${Math.round(raw.x)} · Z ${Math.round(raw.y)}</div>`:''}<div style="opacity:.65;font-size:11px;text-transform:uppercase;margin-top:9px">Services</div><div id="srv" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:5px"></div>`;
+  const w=body.querySelector('#srv');for(const r of routes){const b=document.createElement('button');b.textContent=r.label;b.style.cssText=`border:0;border-left:5px solid ${colorHex(r.color)};background:#ffffff12;color:#fff;padding:5px 8px;border-radius:6px;cursor:pointer`;b.onclick=()=>{state.selectedRoute=r.id;showRoutePanel(r.id);render()};w.appendChild(b)}
+}
+function showRoutePanel(id){
+  const r=state.model.groupById.get(id);if(!r)return;const body=panelBase(r.label),names=[...r.nodes].map(n=>state.model.stationMeta.get(n)?.name||n);
+  body.innerHTML=`<div style="opacity:.7;margin-bottom:8px">${modeLabel(r.mode)} · ${names.length} stations</div><div style="display:flex;flex-wrap:wrap;gap:5px">${names.map(n=>`<span style="background:#ffffff12;border-radius:6px;padding:3px 6px">${n}</span>`).join('')}</div>`;
+}
+function buildControls(){
+  const box=document.createElement('div');box.style.cssText='position:fixed;left:14px;bottom:14px;z-index:99999;background:rgba(12,18,30,.94);color:#fff;padding:12px 13px;border-radius:12px;font:13px/1.35 Arial,sans-serif;box-shadow:0 6px 24px #0008;min-width:215px;';
+  box.innerHTML='<div style="font-weight:700;font-size:14px">Folityn schematic v6.1</div><div style="opacity:.7;font-size:11px;margin:2px 0 9px">shared trunks · 22.5° disciplined</div>';
+  for(const[m,l]of[['light_rail','Light Rail'],['rail','Rail'],['high_speed','High Speed']]){const row=document.createElement('label');row.style.cssText='display:block;margin:5px 0';const cb=document.createElement('input');cb.type='checkbox';cb.checked=state.visible.has(m);cb.style.marginRight='7px';cb.onchange=()=>{cb.checked?state.visible.add(m):state.visible.delete(m);localStorage.setItem(KEY+'modes',JSON.stringify([...state.visible]));render()};row.append(cb,document.createTextNode(l));box.appendChild(row)}
+  const s=document.createElement('select');s.style.cssText='width:100%;margin:7px 0;padding:5px;background:#172033;color:#fff;border:1px solid #ffffff33;border-radius:6px';s.innerHTML='<option value="key">Key labels</option><option value="all">All labels</option><option value="none">No labels</option>';s.value=state.labels;s.onchange=()=>{state.labels=s.value;localStorage.setItem(KEY+'labels',state.labels);render()};box.appendChild(s);
+  const b=document.createElement('button');b.textContent='Fit';b.style.cssText='width:100%;padding:6px;border:0;border-radius:7px;background:#25324a;color:#fff';b.onclick=fit;box.appendChild(b);document.body.appendChild(box);
+}
+function installInteraction(){
+  const ov=state.overlay;
+  ov.addEventListener('mousedown',e=>{if(e.button!==0||e.target?.dataset?.stationHit||e.target?.dataset?.routeHit)return;state.drag={x:e.clientX,y:e.clientY,view:{...state.view}};ov.style.cursor='grabbing'});
+  window.addEventListener('mousemove',e=>{if(!state.drag)return;if(!(e.buttons&1)){state.drag=null;ov.style.cursor='grab';return}const r=ov.getBoundingClientRect(),dx=(e.clientX-state.drag.x)*state.drag.view.w/Math.max(1,r.width),dy=(e.clientY-state.drag.y)*state.drag.view.h/Math.max(1,r.height);state.view={...state.drag.view,x:state.drag.view.x-dx,y:state.drag.view.y-dy};applyView()});
+  window.addEventListener('mouseup',()=>{state.drag=null;ov.style.cursor='grab'});
+  ov.addEventListener('wheel',e=>{e.preventDefault();const r=ov.getBoundingClientRect(),mx=(e.clientX-r.left)/r.width,my=(e.clientY-r.top)/r.height,f=Math.exp(e.deltaY*.0012),o=state.view,nw=clamp(o.w*f,state.fitView.w*.07,state.fitView.w*8),nh=nw*o.h/o.w;state.view={x:o.x+mx*(o.w-nw),y:o.y+my*(o.h-nh),w:nw,h:nh};applyView()},{passive:false});
+  ov.addEventListener('dblclick',fit);ov.addEventListener('click',e=>{if(e.target===ov||e.target===state.svg||e.target===state.layers.bg){state.selectedRoute=null;if(state.panel)state.panel.style.display='none';render()}});
+}
+async function init(){
+  try{
+    state.wrapper=await waitForMap();state.model=buildModel(await loadNetwork());state.model.topology=buildTopology(state.model);state.model.laneIndex=computeFixedLaneIndex(state.model);
+    state.pos=preprocessPositions(state.model);state.displayPos=new Map([...state.pos].map(([k,p])=>[k,{...p}]));
+    createOverlay();fit();render();buildControls();installInteraction();
+  }catch(e){console.error('[Folityn v6.1]',e)}
+}
 init();
 })();
