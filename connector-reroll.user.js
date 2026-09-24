@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Folityn MTR Map Tools
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      11.4.0
-// @description  Native MTR map with tram/bus filters, conservative simplification, and hard-coded Folityn schematic corridors.
+// @version      11.4.1
+// @description  Native MTR map with tram/bus filters, conservative simplification, and deterministic Folityn schematic corridors.
 // @match        http://localhost:8888/*
 // @match        http://127.0.0.1:8888/*
 // @run-at       document-start
@@ -51,28 +51,21 @@ function coordsForRoutes(routes){
   for(const[id,ps]of occ)out.set(id,{x:median(ps.map(p=>p.x)),z:median(ps.map(p=>p.z))});
   return out;
 }
-function applyPositions(routes,positions){
-  for(const r of routes)for(const st of routeStops(r)){const q=positions.get(stopId(st));if(q)setPoint(st,q)}
-}
+function applyPositions(routes,positions){for(const r of routes)for(const st of routeStops(r)){const q=positions.get(stopId(st));if(q)setPoint(st,q)}}
 function buildGraph(routes){
-  const graph=new Map(),coords=coordsForRoutes(routes);
-  const node=id=>{if(id&&!graph.has(id))graph.set(id,new Set())};
+  const graph=new Map(),coords=coordsForRoutes(routes),node=id=>{if(id&&!graph.has(id))graph.set(id,new Set())};
   for(const r of routes){const s=routeStops(r).filter(x=>stopId(x)&&point(x));for(const st of s)node(stopId(st));for(let i=1;i<s.length;i++){const a=stopId(s[i-1]),b=stopId(s[i]);if(!a||!b||a===b)continue;node(a);node(b);graph.get(a).add(b);graph.get(b).add(a)}}
   return{graph,coords};
 }
 function addProposal(map,id,q){if(!map.has(id))map.set(id,[]);map.get(id).push(q)}
 function finalize(proposals){const out=new Map();for(const[id,ps]of proposals)out.set(id,{x:median(ps.map(p=>p.x)),z:median(ps.map(p=>p.z))});return out}
 
-// Conservative generic simplification. Hard registry below always wins afterwards.
 function chainProposal(ids,graph,coords,proposals,maxAngle,maxPerpFactor){
-  if(ids.length<3)return;
-  let A=coords.get(ids[0]),B=coords.get(ids.at(-1));if(!A||!B)return;
-  const dAB=dist(A,B);if(dAB<50)return;
-  const raw=Math.atan2(B.z-A.z,B.x-A.x),snap=nearestOctilinear(raw);if(angleDiff(raw,snap)>rad(maxAngle))return;
+  if(ids.length<3)return;const A=coords.get(ids[0]),B=coords.get(ids.at(-1));if(!A||!B)return;
+  const dAB=dist(A,B);if(dAB<50)return;const raw=Math.atan2(B.z-A.z,B.x-A.x),snap=nearestOctilinear(raw);if(angleDiff(raw,snap)>rad(maxAngle))return;
   const vx=B.x-A.x,vz=B.z-A.z,vv=vx*vx+vz*vz;let maxPerp=0;
   for(const id of ids.slice(1,-1)){const q=coords.get(id);if(!q)continue;const t=vv?((q.x-A.x)*vx+(q.z-A.z)*vz)/vv:0;maxPerp=Math.max(maxPerp,dist(q,{x:A.x+vx*t,z:A.z+vz*t}))}
-  if(maxPerp>Math.max(130,dAB*maxPerpFactor))return;
-  const ux=Math.cos(snap),uz=Math.sin(snap),proj=(B.x-A.x)*ux+(B.z-A.z)*uz;if(Math.abs(proj)<45)return;
+  if(maxPerp>Math.max(130,dAB*maxPerpFactor))return;const ux=Math.cos(snap),uz=Math.sin(snap),proj=(B.x-A.x)*ux+(B.z-A.z)*uz;if(Math.abs(proj)<45)return;
   const ps=ids.map(id=>coords.get(id));let total=0,cum=[0];for(let i=1;i<ps.length;i++){total+=dist(ps[i-1],ps[i]);cum.push(total)}if(!total)return;
   for(let i=1;i<ids.length-1;i++){const id=ids[i],deg=graph.get(id)?.size??0;if(deg>2)continue;const t=cum[i]/total;addProposal(proposals,id,{x:A.x+ux*proj*t,z:A.z+uz*proj*t})}
 }
@@ -81,7 +74,7 @@ function simplifyClass(routes,kind){
   if(kind==='tram'){
     for(const r of routes){const seq=routeStops(r).map(stopId).filter(Boolean);if(seq.length<3)continue;let start=0;for(let i=1;i<seq.length;i++){const degree=graph.get(seq[i])?.size??0,isAnchor=i===seq.length-1||degree!==2;if(!isAnchor)continue;chainProposal(seq.slice(start,i+1),graph,coords,proposals,18,.24);start=i}}
   }else{
-    for(const r of routes){const seq=routeStops(r).map(stopId).filter(Boolean);if(seq.length<3)continue;let i=0;while(i<seq.length-2){let best=-1;for(let j=i+2;j<seq.length;j++){const tmp=new Map();chainProposal(seq.slice(i,j+1),graph,coords,tmp,23,.30);if(tmp.size){best=j}else if(best>=i+2&&j-best>2)break}if(best<0){i++;continue}chainProposal(seq.slice(i,best+1),graph,coords,proposals,23,.30);i=best}}
+    for(const r of routes){const seq=routeStops(r).map(stopId).filter(Boolean);if(seq.length<3)continue;let i=0;while(i<seq.length-2){let best=-1;for(let j=i+2;j<seq.length;j++){const tmp=new Map();chainProposal(seq.slice(i,j+1),graph,coords,tmp,23,.30);if(tmp.size)best=j;else if(best>=i+2&&j-best>2)break}if(best<0){i++;continue}chainProposal(seq.slice(i,best+1),graph,coords,proposals,23,.30);i=best}}
   }
   return finalize(proposals);
 }
@@ -90,39 +83,43 @@ function idNamesForRoute(r,nameMap){return routeStops(r).map(st=>({id:stopId(st)
 function aliasSet(names){return new Set(names.map(norm))}
 function findPathOnRoute(r,nameMap,startNames,endNames){
   const seq=idNamesForRoute(r,nameMap),A=aliasSet(startNames),B=aliasSet(endNames);let best=null;
-  for(let i=0;i<seq.length;i++)if(A.has(seq[i].name))for(let j=0;j<seq.length;j++)if(B.has(seq[j].name)&&i!==j){const lo=Math.min(i,j),hi=Math.max(i,j),cand=seq.slice(lo,hi+1);if(!best||cand.length>best.length)best=cand}
+  for(let i=0;i<seq.length;i++)if(A.has(seq[i].name))for(let j=0;j<seq.length;j++)if(B.has(seq[j].name)&&i!==j){
+    const cand=i<j?seq.slice(i,j+1):seq.slice(j,i+1).reverse();if(!best||cand.length>best.length)best=cand;
+  }
+  return best;
+}
+function bestPathAcrossRoutes(routes,nameMap,rule){
+  let best=null;
+  for(const r of routes){if(rule.class==='light'&&!isLightRail(r))continue;if(rule.class==='rail'&&!isRail(r))continue;const p=findPathOnRoute(r,nameMap,rule.from,rule.to);if(p&&(!best||p.length>best.length))best=p}
   return best;
 }
 function compressedSteps(ids,coords){
   const raw=[];for(let i=1;i<ids.length;i++){const a=coords.get(ids[i-1]),b=coords.get(ids[i]);raw.push(a&&b?dist(a,b):0)}
-  const nz=raw.filter(x=>x>0);const med=nz.length?median(nz):140;return raw.map(d=>clamp(d||med,med*.68,med*1.45));
+  const nz=raw.filter(x=>x>0),med=nz.length?median(nz):140;return raw.map(d=>clamp(d||med,med*.68,med*1.45));
 }
-function diagonalAngle(raw,forcedUp=false){
-  if(forcedUp){const east=Math.cos(raw)>=0;return east?-Math.PI/4:3*Math.PI/4}
+function diagonalAngle(raw,mode='nearest'){
+  const east=Math.cos(raw)>=0;
+  if(mode==='up')return east?-Math.PI/4:3*Math.PI/4;
+  if(mode==='down')return east?Math.PI/4:-3*Math.PI/4;
   const choices=[Math.PI/4,-Math.PI/4,3*Math.PI/4,-3*Math.PI/4];let best=choices[0],bd=Infinity;for(const a of choices){const d=angleDiff(raw,a);if(d<bd){bd=d;best=a}}return best;
 }
 function layoutPath(ids,coords,start,angle){
-  const steps=compressedSteps(ids,coords),ux=Math.cos(angle),uz=Math.sin(angle),out=new Map([[ids[0],start]]);let x=start.x,z=start.z;for(let i=1;i<ids.length;i++){x+=ux*steps[i-1];z+=uz*steps[i-1];out.set(ids[i],{x,z})}return out;
+  const steps=compressedSteps(ids,coords),ux=Math.cos(angle),uz=Math.sin(angle),out=new Map([[ids[0],start]]);let x=start.x,z=start.z;
+  for(let i=1;i<ids.length;i++){x+=ux*steps[i-1];z+=uz*steps[i-1];out.set(ids[i],{x,z})}return out;
 }
 function mergeMap(target,source){for(const[id,q]of source)target.set(id,q)}
 function currentCoord(id,base,hard){return hard.get(id)||base.get(id)}
-
 function applyCorridorRule(routes,nameMap,base,hard,rule){
-  let applied=0;
-  for(const r of routes){
-    if(rule.class==='light'&&!isLightRail(r))continue;if(rule.class==='rail'&&!isRail(r))continue;
-    const path=findPathOnRoute(r,nameMap,rule.from,rule.to);if(!path||path.length<2)continue;
-    const ids=path.map(x=>x.id),A=currentCoord(ids[0],base,hard),B=currentCoord(ids.at(-1),base,hard);if(!A||!B)continue;
-    const raw=Math.atan2(B.z-A.z,B.x-A.x);let angle;
-    if(rule.angle==='horizontal')angle=Math.cos(raw)>=0?0:Math.PI;
-    else if(rule.angle==='diag-up')angle=diagonalAngle(raw,true);
-    else if(rule.angle==='diag')angle=diagonalAngle(raw,false);
-    else angle=nearestOctilinear(raw);
-    mergeMap(hard,layoutPath(ids,base,A,angle));applied++;
-  }
-  return applied;
+  const path=bestPathAcrossRoutes(routes,nameMap,rule);if(!path||path.length<2)return 0;
+  const ids=path.map(x=>x.id),A=currentCoord(ids[0],base,hard),B=currentCoord(ids.at(-1),base,hard);if(!A||!B)return 0;
+  const raw=Math.atan2(B.z-A.z,B.x-A.x);let angle;
+  if(rule.angle==='horizontal')angle=Math.cos(raw)>=0?0:Math.PI;
+  else if(rule.angle==='diag-up')angle=diagonalAngle(raw,'up');
+  else if(rule.angle==='diag-down')angle=diagonalAngle(raw,'down');
+  else if(rule.angle==='diag')angle=diagonalAngle(raw,'nearest');
+  else angle=nearestOctilinear(raw);
+  mergeMap(hard,layoutPath(ids,base,A,angle));return 1;
 }
-
 function mergeVisualHub(data,nameMap,base,hard,names){
   const wanted=aliasSet(names),ids=[];for(const[id,name]of nameMap)if(wanted.has(norm(name)))ids.push(id);if(ids.length<2)return 0;
   const ps=ids.map(id=>currentCoord(id,base,hard)).filter(Boolean);if(!ps.length)return 0;const q={x:median(ps.map(p=>p.x)),z:median(ps.map(p=>p.z))};for(const id of ids)hard.set(id,q);return ids.length;
@@ -132,43 +129,34 @@ function applyFolitynRegistry(data){
   const routes=data.routes||[],nameMap=stationNameMap(data),base=coordsForRoutes(routes),hard=new Map();
   const stats={rogowska:0,jamUp:0,jamEast:0,wzgorzyn:0,drzewiec:0,kfEast:0,wityHub:0};
 
-  // 1) Main east-west surface spine: Rogowska. It stays horizontal and authoritative.
-  stats.rogowska=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Rogowska Centrum Miejskie'],to:['Szwedzka/Norweska','Szwedzka Stadion','Grochowa'],angle:'horizontal'});
+  // Rogowska is no longer the horizontal master axis. From RCM it becomes one clean 45-degree SE corridor.
+  stats.rogowska=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Rogowska Centrum Miejskie'],to:['Szwedzka/Norweska','Szwedzka Stadion','Grochowa'],angle:'diag-down'});
 
-  // 2) Kotlandzka/Jamnikowsko: leave RCM at 45° up, then become horizontal at Rondo Moryta.
+  // Kotlandzka/Jamnikowsko: 45 degrees up from RCM, then horizontal from Rondo Moryta eastwards.
   stats.jamUp=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Rogowska Centrum Miejskie'],to:['Rondo Moryta-Niejawskiego'],angle:'diag-up'});
   stats.jamEast=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Rondo Moryta-Niejawskiego'],to:['Folityn Jamnikowsko'],angle:'horizontal'});
 
-  // 3) Wzgórzyn surface corridor: one clean diagonal through the corridor instead of stair-stepping.
   stats.wzgorzyn=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Wzgórzyn PKM'],to:['Końcowa','Astrolitowska'],angle:'diag'});
-
-  // 4) Drzewiec corridor is genuinely straight in-world until Os. Lipowe.
   stats.drzewiec=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Drzewiec PKM'],to:['Lipków/Os.Lipowe'],angle:'diag'});
 
-  // 5) KF East railway: a separate straight rail axis through Wzgórzyn PKM -> Jamnikowsko PKM.
-  //    The Jamnikowsko tram loop deliberately ends before this rail station and is NOT merged with it.
+  // KF East stays a separate straight railway through Wzgórzyn PKM -> Jamnikowsko PKM.
   stats.kfEast=applyCorridorRule(routes,nameMap,base,hard,{class:'rail',from:['Wzgórzyn PKM'],to:['Jamnikowsko PKM'],angle:'diag'});
 
-  // Wity bus/rail stops are physically the same place, so collapse only this known true hub.
+  // Wity and Wity PKM are physically the same location and form one visual interchange.
   stats.wityHub=mergeVisualHub(data,nameMap,base,hard,['Folityn Wity','Wity PKM']);
 
-  applyPositions(routes,hard);
-  window.__folitynCorridorRegistryDebug={...stats,moved:hard.size};
+  applyPositions(routes,hard);window.__folitynCorridorRegistryDebug={...stats,moved:hard.size};
 }
-
 function simplifyNetwork(data){
   const routes=data.routes||[],trams=routes.filter(r=>classOf(r)==='tram'),buses=routes.filter(r=>classOf(r)==='bus');
-  const tramPos=simplifyClass(trams,'tram');applyPositions(trams,tramPos);
-  const busPos=simplifyClass(buses,'bus');applyPositions(buses,busPos);
-  applyFolitynRegistry(data);
+  const tramPos=simplifyClass(trams,'tram');applyPositions(trams,tramPos);const busPos=simplifyClass(buses,'bus');applyPositions(buses,busPos);applyFolitynRegistry(data);
   window.__folitynSchematicDebug={tramRoutes:trams.length,busRoutes:buses.length,tramMoved:tramPos.size,busMoved:busPos.size,registry:window.__folitynCorridorRegistryDebug};
 }
 
 function filterEnvelope(env){
   if(!env||typeof env!=='object')return env;const src=env.data&&typeof env.data==='object'?env.data:env;if(!Array.isArray(src.routes))return env;
   const out=typeof structuredClone==='function'?structuredClone(env):JSON.parse(JSON.stringify(env)),data=out.data&&typeof out.data==='object'?out.data:out,before=data.routes.length;
-  data.routes=data.routes.filter(r=>{const c=classOf(r);if(c==='tram')return tramsOn();if(c==='bus')return busesOn();return true});
-  if(simplifyOn())simplifyNetwork(data);
+  data.routes=data.routes.filter(r=>{const c=classOf(r);if(c==='tram')return tramsOn();if(c==='bus')return busesOn();return true});if(simplifyOn())simplifyNetwork(data);
   window.__folitynLightRailFilterDebug={before,after:data.routes.length,trams:tramsOn(),buses:busesOn(),simplify:simplifyOn()};return out;
 }
 const transformText=text=>{try{return JSON.stringify(filterEnvelope(JSON.parse(text)))}catch(e){console.warn('[Folityn map tools] transform failed',e);return text}};
