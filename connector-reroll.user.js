@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Folityn MTR Map Tools
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      11.4.3
+// @version      11.4.4
 // @description  Native MTR map with tram/bus filters, conservative simplification, and hard-coded Folityn schematic corridors.
 // @match        http://localhost:8888/*
 // @match        http://127.0.0.1:8888/*
@@ -63,7 +63,6 @@ function buildGraph(routes){
 function addProposal(map,id,q){if(!map.has(id))map.set(id,[]);map.get(id).push(q)}
 function finalize(proposals){const out=new Map();for(const[id,ps]of proposals)out.set(id,{x:median(ps.map(p=>p.x)),z:median(ps.map(p=>p.z))});return out}
 
-// Conservative generic simplification. Hard registry below always wins afterwards.
 function chainProposal(ids,graph,coords,proposals,maxAngle,maxPerpFactor){
   if(ids.length<3)return;
   let A=coords.get(ids[0]),B=coords.get(ids.at(-1));if(!A||!B)return;
@@ -112,7 +111,7 @@ function applyCorridorRule(routes,nameMap,base,hard,rule){
   for(const r of routes){
     if(rule.class==='light'&&!isLightRail(r))continue;if(rule.class==='rail'&&!isRail(r))continue;
     const path=findPathOnRoute(r,nameMap,rule.from,rule.to);if(!path||path.length<2)continue;
-    const ids=path.map(x=>x.id),A=currentCoord(ids[0],base,hard),B=currentCoord(ids.at(-1],base,hard);if(!A||!B)continue;
+    const ids=path.map(x=>x.id),A=currentCoord(ids[0],base,hard),B=currentCoord(ids.at(-1),base,hard);if(!A||!B)continue;
     const raw=Math.atan2(B.z-A.z,B.x-A.x);let angle;
     if(rule.angle==='horizontal')angle=Math.cos(raw)>=0?0:Math.PI;
     else if(rule.angle==='diag-up')angle=diagonalAngle(raw,true);
@@ -132,24 +131,12 @@ function applyFolitynRegistry(data){
   const routes=data.routes||[],nameMap=stationNameMap(data),base=coordsForRoutes(routes),hard=new Map();
   const stats={rogowska:0,jamUp:0,jamEast:0,wzgorzyn:0,drzewiec:0,kfEast:0,wityHub:0};
 
-  // 1) Main east-west surface spine: Rogowska. It stays horizontal and authoritative.
   stats.rogowska=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Rogowska Centrum Miejskie'],to:['Szwedzka/Norweska','Szwedzka Stadion','Grochowa'],angle:'horizontal'});
-
-  // 2) Kotlandzka/Jamnikowsko: leave RCM at 45° up, then become horizontal at Rondo Moryta.
   stats.jamUp=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Rogowska Centrum Miejskie'],to:['Rondo Moryta-Niejawskiego'],angle:'diag-up'});
   stats.jamEast=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Rondo Moryta-Niejawskiego'],to:['Folityn Jamnikowsko'],angle:'horizontal'});
-
-  // 3) Wzgórzyn surface corridor: one clean diagonal through the corridor instead of stair-stepping.
   stats.wzgorzyn=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Wzgórzyn PKM'],to:['Końcowa','Astrolitowska'],angle:'diag'});
-
-  // 4) Drzewiec corridor is genuinely straight in-world until Os. Lipowe.
   stats.drzewiec=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Drzewiec PKM'],to:['Lipków/Os.Lipowe'],angle:'diag'});
-
-  // 5) KF East railway: a separate straight rail axis through Wzgórzyn PKM -> Jamnikowsko PKM.
-  //    The Jamnikowsko tram loop deliberately ends before this rail station and is NOT merged with it.
   stats.kfEast=applyCorridorRule(routes,nameMap,base,hard,{class:'rail',from:['Wzgórzyn PKM'],to:['Jamnikowsko PKM'],angle:'diag'});
-
-  // Wity bus/rail stops are physically the same place, so collapse only this known true hub.
   stats.wityHub=mergeVisualHub(data,nameMap,base,hard,['Folityn Wity','Wity PKM']);
 
   applyPositions(routes,hard);
