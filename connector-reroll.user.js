@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         Folityn MTR Map Tools
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      11.8.0
-// @description  v11.7.1 base + protected schematic zones that do not change when routes are added.
+// @version      11.8.1
+// @description  Explicit 11.3 base + 11.7.1 corridor patches + protected schematic zones.
 // @match        http://localhost:8888/*
 // @match        http://127.0.0.1:8888/*
 // @run-at       document-start
 // @grant        none
 // @sandbox      raw
+// @require      https://raw.githubusercontent.com/peachemce/mtr-map-tools/e898fefccbed81c38c1fa0ef1e07b67aa6469760/connector-reroll.user.js
 // @require      https://raw.githubusercontent.com/peachemce/mtr-map-tools/4649156d1411622c09ad40668bfcb1ada5c07906/connector-reroll.user.js
 // @updateURL    https://raw.githubusercontent.com/peachemce/mtr-map-tools/main/connector-reroll.user.js
 // @downloadURL  https://raw.githubusercontent.com/peachemce/mtr-map-tools/main/connector-reroll.user.js
@@ -81,7 +82,7 @@ function lockBlask(d,names,C,dbg){
 function protect(o){const d=root(o);if(!d||!Array.isArray(d.routes))return o;const names=namesById(d),dbg={};let C=coords(d);lockEast(d,names,C,dbg);C=coords(d);lockWzgorzyn(d,names,C,dbg);C=coords(d);lockRynek(d,names,C,dbg);C=coords(d);lockBlask(d,names,C,dbg);window.__folitynProtectedZonesDebug=dbg;return o}
 function text(t){try{return JSON.stringify(protect(JSON.parse(t)))}catch(e){console.warn('[Folityn protected zones]',e);return t}}
 
-// v11.7.1 has already filtered/simplified the API response. We run LAST.
+// Base 11.3 and 11.7.1 have already transformed the API response. We run LAST.
 const priorFetch=window.fetch.bind(window);window.fetch=async function(input,init){const url=typeof input==='string'?input:input?.url||'',r=await priorFetch(input,init);if(!TARGET.test(url))return r;try{return new Response(text(await r.clone().text()),{status:r.status,statusText:r.statusText,headers:r.headers})}catch(e){console.warn('[Folityn protected zones fetch]',e);return r}};
 try{const p=XMLHttpRequest.prototype,tg=Object.getOwnPropertyDescriptor(p,'responseText')?.get,rg=Object.getOwnPropertyDescriptor(p,'response')?.get,cache=new WeakMap();if(tg)Object.defineProperty(p,'responseText',{configurable:true,get(){const raw=tg.call(this);if(!this.__folitynLRFilter||this.readyState!==4||typeof raw!=='string')return raw;let x=cache.get(this)||{};if(x.text===undefined)x.text=text(raw);cache.set(this,x);return x.text}});if(rg)Object.defineProperty(p,'response',{configurable:true,get(){const raw=rg.call(this);if(!this.__folitynLRFilter||this.readyState!==4)return raw;let x=cache.get(this)||{};if(this.responseType==='json'&&raw&&typeof raw==='object'){if(x.json===undefined){x.json=typeof structuredClone==='function'?structuredClone(raw):JSON.parse(JSON.stringify(raw));protect(x.json)}cache.set(this,x);return x.json}if((this.responseType===''||this.responseType==='text')&&typeof raw==='string'){if(x.text===undefined)x.text=text(raw);cache.set(this,x);return x.text}return raw}})}catch(e){console.warn('[Folityn protected zones XHR]',e)}
 })();
