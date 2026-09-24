@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Folityn MTR Map Tools
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      11.4.2
+// @version      11.4.3
 // @description  Native MTR map with tram/bus filters, conservative simplification, and hard-coded Folityn schematic corridors.
 // @match        http://localhost:8888/*
 // @match        http://127.0.0.1:8888/*
@@ -112,11 +112,10 @@ function applyCorridorRule(routes,nameMap,base,hard,rule){
   for(const r of routes){
     if(rule.class==='light'&&!isLightRail(r))continue;if(rule.class==='rail'&&!isRail(r))continue;
     const path=findPathOnRoute(r,nameMap,rule.from,rule.to);if(!path||path.length<2)continue;
-    const ids=path.map(x=>x.id),A=currentCoord(ids[0],base,hard),B=currentCoord(ids.at(-1),base,hard);if(!A||!B)continue;
+    const ids=path.map(x=>x.id),A=currentCoord(ids[0],base,hard),B=currentCoord(ids.at(-1],base,hard);if(!A||!B)continue;
     const raw=Math.atan2(B.z-A.z,B.x-A.x);let angle;
     if(rule.angle==='horizontal')angle=Math.cos(raw)>=0?0:Math.PI;
     else if(rule.angle==='diag-up')angle=diagonalAngle(raw,true);
-    else if(rule.angle==='diag-down'){const east=Math.cos(raw)>=0;angle=east?Math.PI/4:-3*Math.PI/4}
     else if(rule.angle==='diag')angle=diagonalAngle(raw,false);
     else angle=nearestOctilinear(raw);
     mergeMap(hard,layoutPath(ids,base,A,angle));applied++;
@@ -133,8 +132,8 @@ function applyFolitynRegistry(data){
   const routes=data.routes||[],nameMap=stationNameMap(data),base=coordsForRoutes(routes),hard=new Map();
   const stats={rogowska:0,jamUp:0,jamEast:0,wzgorzyn:0,drzewiec:0,kfEast:0,wityHub:0};
 
-  // Rogowska only: one straight 45-degree-down corridor from RCM. Everything else remains v11.4.0 behavior.
-  stats.rogowska=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Rogowska Centrum Miejskie'],to:['Szwedzka/Norweska','Szwedzka Stadion','Grochowa'],angle:'diag-down'});
+  // 1) Main east-west surface spine: Rogowska. It stays horizontal and authoritative.
+  stats.rogowska=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Rogowska Centrum Miejskie'],to:['Szwedzka/Norweska','Szwedzka Stadion','Grochowa'],angle:'horizontal'});
 
   // 2) Kotlandzka/Jamnikowsko: leave RCM at 45° up, then become horizontal at Rondo Moryta.
   stats.jamUp=applyCorridorRule(routes,nameMap,base,hard,{class:'light',from:['Rogowska Centrum Miejskie'],to:['Rondo Moryta-Niejawskiego'],angle:'diag-up'});
