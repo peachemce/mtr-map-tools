@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         MTR Map Tools - Tram / Bus Light Rail Filters
+// @name         MTR Map Tools - Tram / Bus Filters + Schematic Light Rail
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      11.0.0
-// @description  Adds Tram (1-20) and Bus (100+) sub-filters on top of MTR's native Light Rail category.
+// @version      11.1.0
+// @description  Tram/bus sub-filters plus conservative corridor simplification for MTR Light Rail.
 // @match        http://localhost:8888/*
 // @match        http://127.0.0.1:8888/*
 // @run-at       document-start
@@ -18,6 +18,8 @@ const TARGET=/\/mtr\/api\/map\/stations-and-routes(?:\?|$)/;
 const KEY='folityn-light-rail-split-';
 const tramsOn=()=>localStorage.getItem(KEY+'trams')!=='0';
 const busesOn=()=>localStorage.getItem(KEY+'buses')!=='0';
+const simplifyOn=()=>localStorage.getItem(KEY+'simplify')!=='0';
+
 const norm=s=>String(s??'').trim().toLowerCase().replace(/[\s-]+/g,'_');
 const routeType=r=>norm(r?.type);
 const isLightRail=r=>{
@@ -36,32 +38,188 @@ const classOf=r=>{
   if(Number.isFinite(n)&&n>=100) return 'bus';
   return 'other';
 };
+const routeStops=r=>Array.isArray(r?.stations)?r.stations:Array.isArray(r?.routeStations)?r.routeStations:Array.isArray(r?.platforms)?r.platforms:[];
+const stopId=s=>String(s?.id??s?.hexId??s?.stationId??'');
+const point=s=>{
+  const x=Number(s?.x??s?.position?.x),z=Number(s?.z??s?.position?.z);
+  return Number.isFinite(x)&&Number.isFinite(z)?{x,z}:null;
+};
+const setPoint=(s,q)=>{
+  if('x' in s || !s.position){s.x=q.x;s.z=q.z}
+  else{s.position={...s.position,x:q.x,z:q.z}}
+};
+const median=a=>{
+  if(!a.length)return 0;
+  const b=[...a].sort((x,y)=>x-y),m=b.length>>1;
+  return b.length%2?b[m]:(b[m-1]+b[m])/2;
+};
+const dist=(a,b)=>Math.hypot(b.x-a.x,b.z-a.z);
+const rad=d=>d*Math.PI/180;
+const angleDiff=(a,b)=>{
+  let d=Math.abs(a-b)%Math.PI;
+  if(d>Math.PI/2)d=Math.PI-d;
+  return d;
+};
+const nearestOctilinear=a=>Math.round(a/(Math.PI/4))*(Math.PI/4);
+
+function buildLightRailGraph(routes){
+  const graph=new Map(),coords=new Map(),occ=new Map();
+  const addNode=id=>{if(id&&!graph.has(id))graph.set(id,new Set())};
+  for(const r of routes){
+    const s=routeStops(r).filter(x=>stopId(x)&&point(x));
+    for(const st of s){
+      const id=stopId(st),q=point(st);addNode(id);
+      if(!occ.has(id))occ.set(id,[]);
+      occ.get(id).push(q);
+    }
+    for(let i=1;i<s.length;i++){
+      const a=stopId(s[i-1]),b=stopId(s[i]);
+      if(!a||!b||a===b)continue;
+      addNode(a);addNode(b);
+      graph.get(a).add(b);graph.get(b).add(a);
+    }
+  }
+  for(const [id,ps] of occ)coords.set(id,{x:median(ps.map(p=>p.x)),z:median(ps.map(p=>p.z))});
+  return {graph,coords};
+}
+
+function chainProposal(ids,graph,coords,proposals){
+  if(ids.length<3)return;
+  let A=coords.get(ids[0]),B=coords.get(ids.at(-1));
+  if(!A||!B)return;
+
+  const dAB=dist(A,B);
+  if(dAB<40)return;
+
+  const rawAngle=Math.atan2(B.z-A.z,B.x-A.x);
+  const snap=nearestOctilinear(rawAngle);
+  const diff=angleDiff(rawAngle,snap);
+  if(diff>rad(18))return;
+
+  const ux=Math.cos(snap),uz=Math.sin(snap);
+  let proj=(B.x-A.x)*ux+(B.z-A.z)*uz;
+  if(proj<0)proj=-proj;
+  if(proj<40)return;
+
+  let maxPerp=0;
+  const vx=B.x-A.x,vz=B.z-A.z,vv=vx*vx+vz*vz;
+  for(const id of ids.slice(1,-1)){
+    const q=coords.get(id);if(!q)continue;
+    const t=vv?((q.x-A.x)*vx+(q.z-A.z)*vz)/vv:0;
+    const p={x:A.x+vx*t,z:A.z+vz*t};
+    maxPerp=Math.max(maxPerp,dist(q,p));
+  }
+  if(maxPerp>Math.max(120,dAB*.24))return;
+
+  const ps=ids.map(id=>coords.get(id));
+  let total=0;const cum=[0];
+  for(let i=1;i<ps.length;i++){total+=dist(ps[i-1],ps[i]);cum.push(total)}
+  if(total<=0)return;
+
+  const deg0=graph.get(ids[0])?.size??0,deg1=graph.get(ids.at(-1))?.size??0;
+  if(deg0<=2&&deg1>2){
+    ids=[...ids].reverse();
+    A=coords.get(ids[0]);B=coords.get(ids.at(-1));
+    const raw=Math.atan2(B.z-A.z,B.x-A.x),sn=nearestOctilinear(raw);
+    const Ux=Math.cos(sn),Uz=Math.sin(sn);
+    const P=(B.x-A.x)*Ux+(B.z-A.z)*Uz;
+    const pss=ids.map(id=>coords.get(id));
+    total=0;cum.length=1;cum[0]=0;
+    for(let i=1;i<pss.length;i++){total+=dist(pss[i-1],pss[i]);cum.push(total)}
+    const lastDeg=graph.get(ids.at(-1))?.size??0;
+    for(let i=1;i<ids.length;i++){
+      const id=ids[i],deg=graph.get(id)?.size??0;
+      if(deg>2)continue;
+      if(i===ids.length-1&&lastDeg>2)continue;
+      const t=cum[i]/total;
+      const q={x:A.x+Ux*P*t,z:A.z+Uz*P*t};
+      if(!proposals.has(id))proposals.set(id,[]);
+      proposals.get(id).push(q);
+    }
+    return;
+  }
+
+  const lastDeg=deg1;
+  for(let i=1;i<ids.length;i++){
+    const id=ids[i],deg=graph.get(id)?.size??0;
+    if(deg>2)continue;
+    if(i===ids.length-1&&lastDeg>2)continue;
+    const t=cum[i]/total;
+    const q={x:A.x+ux*proj*t,z:A.z+uz*proj*t};
+    if(!proposals.has(id))proposals.set(id,[]);
+    proposals.get(id).push(q);
+  }
+}
+
+function simplifyLightRail(data){
+  const routes=(data.routes||[]).filter(isLightRail);
+  if(!routes.length)return;
+  const {graph,coords}=buildLightRailGraph(routes);
+  const proposals=new Map();
+
+  for(const r of routes){
+    const seq=routeStops(r).map(stopId).filter(Boolean);
+    if(seq.length<3)continue;
+    let start=0;
+    for(let i=1;i<seq.length;i++){
+      const degree=graph.get(seq[i])?.size??0;
+      const isAnchor=i===seq.length-1||degree!==2;
+      if(!isAnchor)continue;
+      chainProposal(seq.slice(start,i+1),graph,coords,proposals);
+      start=i;
+    }
+  }
+
+  const finalPos=new Map();
+  for(const [id,ps] of proposals){
+    finalPos.set(id,{x:median(ps.map(p=>p.x)),z:median(ps.map(p=>p.z))});
+  }
+
+  for(const r of routes){
+    for(const st of routeStops(r)){
+      const q=finalPos.get(stopId(st));
+      if(q)setPoint(st,q);
+    }
+  }
+
+  window.__folitynSchematicDebug={
+    lightRailRoutes:routes.length,
+    graphNodes:graph.size,
+    simplifiedStations:finalPos.size
+  };
+}
 
 function filterEnvelope(env){
   if(!env||typeof env!=='object') return env;
   const src=env.data&&typeof env.data==='object'?env.data:env;
   if(!Array.isArray(src.routes)) return env;
+
   const out=typeof structuredClone==='function'?structuredClone(env):JSON.parse(JSON.stringify(env));
   const data=out.data&&typeof out.data==='object'?out.data:out;
   const before=data.routes.length;
+
   data.routes=data.routes.filter(r=>{
     const c=classOf(r);
     if(c==='tram') return tramsOn();
     if(c==='bus') return busesOn();
     return true;
   });
+
+  if(simplifyOn())simplifyLightRail(data);
+
   window.__folitynLightRailFilterDebug={
     before,
     after:data.routes.length,
     trams:tramsOn(),
-    buses:busesOn()
+    buses:busesOn(),
+    simplify:simplifyOn()
   };
   return out;
 }
 
 const transformText=text=>{
   try{return JSON.stringify(filterEnvelope(JSON.parse(text)))}
-  catch(e){console.warn('[Folityn light rail filters] transform failed',e);return text}
+  catch(e){console.warn('[Folityn light rail tools] transform failed',e);return text}
 };
 
 const nativeFetch=window.fetch.bind(window);
@@ -77,7 +235,7 @@ window.fetch=async function(input,init){
       headers:response.headers
     });
   }catch(e){
-    console.warn('[Folityn light rail filters] fetch hook failed',e);
+    console.warn('[Folityn light rail tools] fetch hook failed',e);
     return response;
   }
 };
@@ -128,7 +286,7 @@ try{
     });
   }
 }catch(e){
-  console.warn('[Folityn light rail filters] XHR hook failed',e);
+  console.warn('[Folityn light rail tools] XHR hook failed',e);
 }
 
 function setFilter(which,on){
@@ -137,7 +295,7 @@ function setFilter(which,on){
 }
 
 function makeToggle(label,kind,icon){
-  const on=kind==='trams'?tramsOn():busesOn();
+  const on=kind==='trams'?tramsOn():kind==='buses'?busesOn():simplifyOn();
   const b=document.createElement('button');
   b.type='button';
   b.className='folityn-lr-toggle'+(on?' is-on':' is-off');
@@ -153,7 +311,12 @@ function buildControls(){
   const title=document.createElement('div');
   title.className='folityn-lr-title';
   title.textContent='Light Rail';
-  box.append(title,makeToggle('Trams 1–20','trams','🚋'),makeToggle('Buses 100+','buses','🚌'));
+  box.append(
+    title,
+    makeToggle('Trams 1–20','trams','🚋'),
+    makeToggle('Buses 100+','buses','🚌'),
+    makeToggle('Simplify corridors','simplify','↗')
+  );
   return box;
 }
 
