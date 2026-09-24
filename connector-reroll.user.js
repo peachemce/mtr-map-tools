@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Folityn MTR Map Tools
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      11.7.1
-// @description  v11.3 base + one-sided stop corridors + final hard Rogowska street-axis lock.
+// @version      11.8.0
+// @description  v11.7.1 base + protected schematic zones that do not change when routes are added.
 // @match        http://localhost:8888/*
 // @match        http://127.0.0.1:8888/*
 // @run-at       document-start
 // @grant        none
 // @sandbox      raw
-// @require      https://raw.githubusercontent.com/peachemce/mtr-map-tools/e898fefccbed81c38c1fa0ef1e07b67aa6469760/connector-reroll.user.js
+// @require      https://raw.githubusercontent.com/peachemce/mtr-map-tools/4649156d1411622c09ad40668bfcb1ada5c07906/connector-reroll.user.js
 // @updateURL    https://raw.githubusercontent.com/peachemce/mtr-map-tools/main/connector-reroll.user.js
 // @downloadURL  https://raw.githubusercontent.com/peachemce/mtr-map-tools/main/connector-reroll.user.js
 // ==/UserScript==
@@ -19,66 +19,69 @@ const stops=r=>Array.isArray(r?.stations)?r.stations:Array.isArray(r?.routeStati
 const sid=s=>String(s?.id??s?.hexId??s?.stationId??'');
 const pt=s=>{const x=Number(s?.x??s?.position?.x),z=Number(s?.z??s?.position?.z);return Number.isFinite(x)&&Number.isFinite(z)?{x,z}:null};
 const put=(s,q)=>{'x'in s||!s.position?(s.x=q.x,s.z=q.z):(s.position={...s.position,x:q.x,z:q.z})};
-const med=a=>{if(!a.length)return 0;const b=[...a].sort((x,y)=>x-y),m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2};
-const dist=(a,b)=>Math.hypot(b.x-a.x,b.z-a.z),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const isLR=r=>{const t=norm(r?.type);return t==='train_light_rail'||t==='light_rail'||t.includes('light_rail')};
-const num=r=>{const m=String(r?.name??r?.routeName??r?.route_name??'').match(/\d+/);return m?+m[0]:null};
-const cls=r=>{if(!isLR(r))return null;const n=num(r);return n>=1&&n<=20?'tram':n>=100?'bus':null};
 const root=e=>e?.data&&typeof e.data==='object'?e.data:e;
-function coords(rs){const o=new Map();for(const r of rs||[])for(const s of stops(r)){const id=sid(s),q=pt(s);if(!id||!q)continue;if(!o.has(id))o.set(id,[]);o.get(id).push(q)}const out=new Map();for(const[id,p]of o)out.set(id,{x:med(p.map(q=>q.x)),z:med(p.map(q=>q.z))});return out}
-function setAll(rs,id,q){for(const r of rs||[])for(const s of stops(r))if(sid(s)===id)put(s,q)}
-function lcs(a,b){const n=a.length,m=b.length,d=Array.from({length:n+1},()=>new Uint16Array(m+1));for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)d[i][j]=a[i]===b[j]?1+d[i+1][j+1]:Math.max(d[i+1][j],d[i][j+1]);const o=[];let i=0,j=0;while(i<n&&j<m){if(a[i]===b[j]){o.push(a[i]);i++;j++}else d[i+1][j]>=d[i][j+1]?i++:j++}return o}
-function apos(seq,a){const o=[];let p=0;for(const id of a){while(p<seq.length&&seq[p]!==id)p++;if(p===seq.length)return null;o.push(p++)}return o}
-const seq=r=>stops(r).map(sid).filter(Boolean);
-function proposal(map,id,q){if(!map.has(id))map.set(id,[]);map.get(id).push(q)}
-function project(s,i0,i1,extra,C,A,B,P){const local=s.slice(i0,i1+1),p=local.map(id=>C.get(id));let total=0,c=[0];for(let i=1;i<local.length;i++){total+=p[i-1]&&p[i]?dist(p[i-1],p[i]):1;c.push(total)}if(!total)total=local.length-1;let n=0;for(let i=1;i<local.length-1;i++){const id=local[i];if(!extra.has(id))continue;const t=clamp(c[i]/total,.08,.92);proposal(P,id,{x:A.x+(B.x-A.x)*t,z:A.z+(B.z-A.z)*t});n++}return n}
-function pair(ra,rb,C,P){const a=seq(ra),b0=seq(rb);if(a.length<2||b0.length<2)return[0,0];const f=lcs(a,b0),br=[...b0].reverse(),rv=lcs(a,br),b=rv.length>f.length?br:b0,an=rv.length>f.length?rv:f;if(an.length<2)return[0,0];const pa=apos(a,an),pb=apos(b,an);if(!pa||!pb)return[0,0];let seg=0,mov=0;for(let k=0;k<an.length-1;k++){const ea=a.slice(pa[k]+1,pa[k+1]),eb=b.slice(pb[k]+1,pb[k+1]);if(!ea.length&&!eb.length)continue;if(ea.length>3||eb.length>3||ea.length+eb.length>5)continue;const A=C.get(an[k]),B=C.get(an[k+1]);if(!A||!B||dist(A,B)<20)continue;const xa=new Set(ea.filter(x=>!eb.includes(x))),xb=new Set(eb.filter(x=>!ea.includes(x)));if(!xa.size&&!xb.size)continue;mov+=project(a,pa[k],pa[k+1],xa,C,A,B,P)+project(b,pb[k],pb[k+1],xb,C,A,B,P);seg++}return[seg,mov]}
-function normalizeOneWay(e){const d=root(e);if(!d||!Array.isArray(d.routes))return e;const lr=d.routes.filter(isLR),C=coords(lr),G=new Map();for(const r of lr){const n=num(r),c=cls(r);if(!Number.isFinite(n)||!c)continue;const k=`${c}:${n}`;if(!G.has(k))G.set(k,[]);G.get(k).push(r)}const P=new Map(),details=[];let pairs=0,segs=0,cands=0;for(const[k,rs]of G){if(rs.length<2)continue;let gs=0,gm=0;for(let i=0;i<rs.length;i++)for(let j=i+1;j<rs.length;j++){const[s,m]=pair(rs[i],rs[j],C,P);if(s)pairs++;gs+=s;gm+=m}if(gs)details.push({line:k,variants:rs.length,segments:gs,candidates:gm});segs+=gs;cands+=gm}let moved=0;for(const[id,ps]of P){setAll(d.routes,id,{x:med(ps.map(q=>q.x)),z:med(ps.map(q=>q.z))});moved++}window.__folitynOneWayCorridorDebug={groups:G.size,pairs,segments:segs,candidates:cands,movedStops:moved,details};return e}
+const dist=(a,b)=>Math.hypot(b.x-a.x,b.z-a.z),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t});
+const add=(a,b,s=1)=>({x:a.x+b.x*s,z:a.z+b.z*s});
+const sub=(a,b)=>({x:a.x-b.x,z:a.z-b.z});
+const dot=(a,b)=>a.x*b.x+a.z*b.z;
+const unit=(a,b)=>{const d=dist(a,b)||1;return{x:(b.x-a.x)/d,z:(b.z-a.z)/d}};
+const perp=(u,sgn=1)=>({x:-u.z*sgn,z:u.x*sgn});
+function namesById(d){const m=new Map();for(const s of d?.stations||[])m.set(String(s.id??s.hexId??s.stationId??''),String(s.name??''));return m}
+function coords(d){const o=new Map();for(const r of d.routes||[])for(const s of stops(r)){const id=sid(s),q=pt(s);if(!id||!q)continue;if(!o.has(id))o.set(id,[]);o.get(id).push(q)}const out=new Map();for(const[id,ps]of o){const xs=ps.map(p=>p.x).sort((a,b)=>a-b),zs=ps.map(p=>p.z).sort((a,b)=>a-b),m=xs.length>>1;out.set(id,{x:xs.length%2?xs[m]:(xs[m-1]+xs[m])/2,z:zs.length%2?zs[m]:(zs[m-1]+zs[m])/2})}return out}
+function find(names,cands){const w=new Set(cands.map(norm));for(const[id,n]of names)if(w.has(norm(n)))return id;return null}
+function item(names,C,cands){const id=find(names,cands);return id?{id,q:C.get(id)}:null}
+function setAll(d,id,q){if(!id||!q)return;for(const r of d.routes||[])for(const s of stops(r))if(sid(s)===id)put(s,q)}
 
-function namesById(d){const out=new Map();for(const s of d?.stations||[])out.set(String(s.id??s.hexId??s.stationId??''),String(s.name??''));return out}
-function findNamedId(names,candidates){const wanted=new Set(candidates.map(norm));for(const[id,name]of names)if(wanted.has(norm(name)))return id;return null}
-
-// FINAL INVARIANT: Rogowska is a physical street corridor, not a route-topology guess.
-// Grochowa is deliberately never used to determine this geometry.
-function patchRogowskaGeometry(e){
-  const d=root(e);if(!d||!Array.isArray(d.routes))return e;
-  const names=namesById(d),C=coords(d.routes);
-  const rcmId=findNamedId(names,['Rogowska Centrum Miejskie']);
-  const dabkaId=findNamedId(names,['Rogowska/Dąbka','Rogowska/Dabka']);
-  const rogId=findNamedId(names,['Rogowska']);
-  const norId=findNamedId(names,['Szwedzka/Norweska','Szwedzka Norweska']);
-  const stadiumId=findNamedId(names,['Szwedzka Stadion']);
-  const ids={rcmId,dabkaId,rogId,norId,stadiumId};
-  if(Object.values(ids).some(v=>!v)){window.__folitynRogowskaConstraintDebug={ok:false,reason:'required named station missing',...ids};return e}
-  const rcm=C.get(rcmId),dabka=C.get(dabkaId),rawRog=C.get(rogId),rawNor=C.get(norId),stadium=C.get(stadiumId);
-  if(!rcm||!dabka||!rawRog||!rawNor||!stadium){window.__folitynRogowskaConstraintDebug={ok:false,reason:'required station coordinates missing',rcm:!!rcm,dabka:!!dabka,rog:!!rawRog,nor:!!rawNor,stadium:!!stadium};return e}
-
-  // Inherit ONLY the already-established RCM -> Rogowska/Dabka street direction,
-  // then snap it to an exact 45-degree continuation.
-  let sx=Math.sign(dabka.x-rcm.x),sz=Math.sign(dabka.z-rcm.z);
-  if(!sx)sx=Math.sign(rawNor.x-dabka.x)||1;
-  if(!sz)sz=Math.sign(rawNor.z-dabka.z)||1;
-  const inv=Math.SQRT1_2,ux=sx*inv,uz=sz*inv;
-
-  // Szwedzka/Norweska lies farther along that SAME axis and is vertically aligned
-  // with Szwedzka Stadion. No service path and no Grochowa coordinate participates.
-  let tNor=(stadium.x-dabka.x)/ux;
-  if(!Number.isFinite(tNor)||tNor<=0)tNor=Math.max(dist(dabka,rawNor),dist(dabka,rawRog)+80);
-  const norTarget={x:stadium.x,z:dabka.z+uz*tNor};
-
-  const d1=Math.max(1,dist(dabka,rawRog)),d2=Math.max(1,dist(rawRog,rawNor));
-  const ratio=clamp(d1/(d1+d2),.18,.82),tRog=tNor*ratio;
-  const rogTarget={x:dabka.x+ux*tRog,z:dabka.z+uz*tRog};
-
-  // Run last and replace EVERY occurrence so earlier generic normalization cannot undo it.
-  setAll(d.routes,rogId,rogTarget);
-  setAll(d.routes,norId,norTarget);
-  window.__folitynRogowskaConstraintDebug={ok:true,sourceAxis:'Rogowska Centrum Miejskie -> Rogowska/Dabka',runsAfterOneWay:true,grochowaUsed:false,rcm,dabka,rogowskaBefore:rawRog,rogowskaAfter:rogTarget,szwedzkaNorweskaBefore:rawNor,szwedzkaNorweskaAfter:norTarget,szwedzkaStadion:stadium,axis45ErrorRog:Math.abs(Math.abs(rogTarget.x-dabka.x)-Math.abs(rogTarget.z-dabka.z)),axis45ErrorNor:Math.abs(Math.abs(norTarget.x-dabka.x)-Math.abs(norTarget.z-dabka.z))};
-  return e
+// 1) EAST STREET: one physical 45-degree Rogowska corridor.
+// Charlińska and Soperka are one-way stops on the SAME street; they may never create loops.
+function lockEast(d,names,C,dbg){
+  const rcm=item(names,C,['Rogowska Centrum Miejskie']),dab=item(names,C,['Rogowska/Dąbka','Rogowska/Dabka']);
+  const rog=item(names,C,['Rogowska']),cha=item(names,C,['Charlińska','Charlinska']),sop=item(names,C,['Soperka']);
+  const nor=item(names,C,['Szwedzka/Norweska','Szwedzka Norweska']),stad=item(names,C,['Szwedzka Stadion']);
+  if(!rcm?.q||!dab?.q||!rog?.id||!nor?.id){dbg.east='missing anchors';return}
+  let sx=Math.sign(dab.q.x-rcm.q.x)||1,sz=Math.sign(dab.q.z-rcm.q.z)||1;const u={x:sx*Math.SQRT1_2,z:sz*Math.SQRT1_2};
+  let tEnd=stad?.q?(stad.q.x-dab.q.x)/u.x:NaN;if(!Number.isFinite(tEnd)||tEnd<160)tEnd=Math.max(260,Math.abs(dot(sub(nor.q||rog.q,dab.q),u)));
+  const end={x:dab.q.x+u.x*tEnd,z:dab.q.z+u.z*tEnd};if(stad?.q)end.x=stad.q.x;
+  for(const[x,t]of [[rog,.34],[cha,.54],[sop,.73],[nor,1]])if(x?.id)setAll(d,x.id,lerp(dab.q,end,t));
+  dbg.east={ok:true,shape:'one 45-degree street',grochowaUsed:false};
 }
 
-function transform(o){normalizeOneWay(o);patchRogowskaGeometry(o);return o}
-function text(t){try{return JSON.stringify(transform(JSON.parse(t)))}catch(e){console.warn('[Folityn map tools]',e);return t}}
-const priorFetch=window.fetch.bind(window);window.fetch=async function(i,n){const u=typeof i==='string'?i:i?.url||'',r=await priorFetch(i,n);if(!TARGET.test(u))return r;try{return new Response(text(await r.clone().text()),{status:r.status,statusText:r.statusText,headers:r.headers})}catch(e){console.warn('[Folityn map tools fetch]',e);return r}};
-try{const p=XMLHttpRequest.prototype,tg=Object.getOwnPropertyDescriptor(p,'responseText')?.get,rg=Object.getOwnPropertyDescriptor(p,'response')?.get,cache=new WeakMap();if(tg)Object.defineProperty(p,'responseText',{configurable:true,get(){const raw=tg.call(this);if(!this.__folitynLRFilter||this.readyState!==4||typeof raw!=='string')return raw;let x=cache.get(this)||{};if(x.text===undefined)x.text=text(raw);cache.set(this,x);return x.text}});if(rg)Object.defineProperty(p,'response',{configurable:true,get(){const raw=rg.call(this);if(!this.__folitynLRFilter||this.readyState!==4)return raw;let x=cache.get(this)||{};if(this.responseType==='json'&&raw&&typeof raw==='object'){if(x.json===undefined){x.json=typeof structuredClone==='function'?structuredClone(raw):JSON.parse(JSON.stringify(raw));transform(x.json)}cache.set(this,x);return x.json}if((this.responseType===''||this.responseType==='text')&&typeof raw==='string'){if(x.text===undefined)x.text=text(raw);cache.set(this,x);return x.text}return raw}})}catch(e){console.warn('[Folityn map tools XHR]',e)}
+// 2) WZGÓRZYN: never fall back to horizontal/vertical MTR stair-steps mid-corridor.
+function lockWzgorzyn(d,names,C,dbg){
+  const a=item(names,C,['Wzgórzyn PKM','Wzgorzyn PKM']),r=item(names,C,['Rakoniewicka']),s=item(names,C,['Astrolitowska']),k=item(names,C,['Końcowa','Koncowa']);
+  if(!a?.q||!k?.q){dbg.wzgorzyn='missing anchors';return}
+  let sx=Math.sign(k.q.x-a.q.x)||1,sz=Math.sign(k.q.z-a.q.z)||1;const u={x:sx*Math.SQRT1_2,z:sz*Math.SQRT1_2};let t=dot(sub(k.q,a.q),u);if(!Number.isFinite(t)||t<140)t=Math.max(180,dist(a.q,k.q));const end=add(a.q,u,t);
+  const d1=r?.q?dist(a.q,r.q):1,d2=s?.q&&r?.q?dist(r.q,s.q):1,d3=s?.q?dist(s.q,k.q):1,total=d1+d2+d3;
+  if(r?.id)setAll(d,r.id,lerp(a.q,end,clamp(d1/total,.18,.46)));
+  if(s?.id)setAll(d,s.id,lerp(a.q,end,clamp((d1+d2)/total,.54,.82)));
+  setAll(d,k.id,end);dbg.wzgorzyn={ok:true,shape:'one 45-degree corridor'};
+}
+
+// 3) RYNEK: stable two-branch diamond. Route count must not flatten the loop.
+function lockRynek(d,names,C,dbg){
+  const a=item(names,C,['Aleje Osamasona']),st=item(names,C,['Stare Miasto']),mu=item(names,C,['Muzeum Narodowa']),kr=item(names,C,['Królewska','Krolewska']),ka=item(names,C,['Katedra']);
+  if(!a?.q||!ka?.q||!st?.id||!mu?.id||!kr?.id){dbg.rynek='missing anchors';return}
+  const u=unit(a.q,ka.q),L=Math.max(180,dist(a.q,ka.q)),raw=mu.q||a.q,cross=(ka.q.x-a.q.x)*(raw.z-a.q.z)-(ka.q.z-a.q.z)*(raw.x-a.q.x),p=perp(u,cross>=0?1:-1),h=clamp(L*.28,85,210);
+  setAll(d,st.id,add(a.q,u,L*.53));
+  setAll(d,mu.id,add(add(a.q,u,L*.31),p,h));
+  setAll(d,kr.id,add(add(a.q,u,L*.70),p,h));
+  dbg.rynek={ok:true,shape:'protected diamond',height:h};
+}
+
+// 4) Purple Grochowa/Blask area: do not invent a little vertical dog-leg at Blask.
+// Keep Blask on the continuation of the approach into Grochowa whenever both exist.
+function lockBlask(d,names,C,dbg){
+  const dab=item(names,C,['Rogowska/Dąbka','Rogowska/Dabka']),gro=item(names,C,['Grochowa']),bla=item(names,C,['Blask']);
+  if(!dab?.q||!gro?.q||!bla?.id){dbg.blask='missing anchors';return}
+  const u=unit(dab.q,gro.q),rawLen=Math.max(55,dist(gro.q,bla.q));
+  const target=add(gro.q,u,rawLen);setAll(d,bla.id,target);dbg.blask={ok:true,shape:'continue approach, no dog-leg'};
+}
+
+function protect(o){const d=root(o);if(!d||!Array.isArray(d.routes))return o;const names=namesById(d),dbg={};let C=coords(d);lockEast(d,names,C,dbg);C=coords(d);lockWzgorzyn(d,names,C,dbg);C=coords(d);lockRynek(d,names,C,dbg);C=coords(d);lockBlask(d,names,C,dbg);window.__folitynProtectedZonesDebug=dbg;return o}
+function text(t){try{return JSON.stringify(protect(JSON.parse(t)))}catch(e){console.warn('[Folityn protected zones]',e);return t}}
+
+// v11.7.1 has already filtered/simplified the API response. We run LAST.
+const priorFetch=window.fetch.bind(window);window.fetch=async function(input,init){const url=typeof input==='string'?input:input?.url||'',r=await priorFetch(input,init);if(!TARGET.test(url))return r;try{return new Response(text(await r.clone().text()),{status:r.status,statusText:r.statusText,headers:r.headers})}catch(e){console.warn('[Folityn protected zones fetch]',e);return r}};
+try{const p=XMLHttpRequest.prototype,tg=Object.getOwnPropertyDescriptor(p,'responseText')?.get,rg=Object.getOwnPropertyDescriptor(p,'response')?.get,cache=new WeakMap();if(tg)Object.defineProperty(p,'responseText',{configurable:true,get(){const raw=tg.call(this);if(!this.__folitynLRFilter||this.readyState!==4||typeof raw!=='string')return raw;let x=cache.get(this)||{};if(x.text===undefined)x.text=text(raw);cache.set(this,x);return x.text}});if(rg)Object.defineProperty(p,'response',{configurable:true,get(){const raw=rg.call(this);if(!this.__folitynLRFilter||this.readyState!==4)return raw;let x=cache.get(this)||{};if(this.responseType==='json'&&raw&&typeof raw==='object'){if(x.json===undefined){x.json=typeof structuredClone==='function'?structuredClone(raw):JSON.parse(JSON.stringify(raw));protect(x.json)}cache.set(this,x);return x.json}if((this.responseType===''||this.responseType==='text')&&typeof raw==='string'){if(x.text===undefined)x.text=text(raw);cache.set(this,x);return x.text}return raw}})}catch(e){console.warn('[Folityn protected zones XHR]',e)}
 })();
