@@ -1,52 +1,835 @@
 // ==UserScript==
 // @name         Folityn Custom Transit Map v13
 // @namespace    https://github.com/peachemce/mtr-map-tools
-// @version      13.0.1
-// @description  Standalone interactive Folityn custom schematic renderer with shared corridors, custom hubs, filters, pan/zoom and clickable stations/routes.
+// @version      13.1.0
+// @description  Standalone interactive Folityn schematic renderer. Direct-loads live MTR data and never modifies the native MTR map.
 // @match        http://localhost:8888/*
 // @match        http://127.0.0.1:8888/*
-// @run-at       document-start
+// @run-at       document-end
 // @grant        none
-// @sandbox      raw
 // @updateURL    https://raw.githubusercontent.com/peachemce/mtr-map-tools/main/folityn-custom-v13.user.js
 // @downloadURL  https://raw.githubusercontent.com/peachemce/mtr-map-tools/main/folityn-custom-v13.user.js
 // ==/UserScript==
+
 (() => {
-'use strict';
-const TARGET=/\/mtr\/api\/map\/stations-and-routes(?:\?|$)/,NS='http://www.w3.org/2000/svg',KEY='folityn-custom-v13-';
-let latestData=null,visible=false,currentModel=null;
-const norm=s=>String(s??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),median=a=>{if(!a.length)return 0;const b=[...a].sort((x,y)=>x-y),m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2},dist=(a,b)=>Math.hypot(b.x-a.x,b.y-a.y),lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t}),clone=x=>typeof structuredClone==='function'?structuredClone(x):JSON.parse(JSON.stringify(x));
-const svgEl=(t,a={})=>{const e=document.createElementNS(NS,t);for(const[k,v]of Object.entries(a))if(v!==undefined&&v!==null)e.setAttribute(k,String(v));return e},el=(t,c,s)=>{const e=document.createElement(t);if(c)e.className=c;if(s!==undefined)e.textContent=s;return e};
-function root(e){return e?.data&&typeof e.data==='object'?e.data:e}function stops(r){return Array.isArray(r?.stations)?r.stations:Array.isArray(r?.routeStations)?r.routeStations:Array.isArray(r?.platforms)?r.platforms:[]}function sid(s){return String(s?.id??s?.hexId??s?.stationId??'')}function pt(s){const x=Number(s?.x??s?.position?.x),z=Number(s?.z??s?.position?.z);return Number.isFinite(x)&&Number.isFinite(z)?{x,z}:null}function rname(r){return String(r?.name??r?.routeName??r?.route_name??'').trim()}function rnum(r){const m=rname(r).match(/\d+/);return m?Number(m[0]):null}function rtype(r){return norm(r?.type)}
-function color(r){const raw=r?.color??r?.routeColor;if(typeof raw==='number'&&Number.isFinite(raw))return`#${(raw&0xffffff).toString(16).padStart(6,'0')}`;const c=String(raw??'').trim();if(/^#?[0-9a-f]{6}$/i.test(c))return c.startsWith('#')?c:'#'+c;if(/^\d+$/.test(c)){const n=Number(c);if(Number.isFinite(n))return`#${(n&0xffffff).toString(16).padStart(6,'0')}`}const p=['#35baf3','#ffb52e','#e73f55','#40c676','#8b35d3','#e37a1f','#96ca32','#2e76bb','#f15ab4','#2d9078','#d5c337','#b95b2c'];let h=0;for(const ch of rname(r))h=(h*33+ch.charCodeAt(0))>>>0;return p[h%p.length]}
-function cls(r){const t=rtype(r),n=rnum(r),nm=norm(rname(r)),light=t==='train_light_rail'||t==='light_rail'||t.includes('light_rail');if(light&&Number.isFinite(n)&&n>=1&&n<=20)return'tram';if(light&&Number.isFinite(n)&&n>=100)return'bus';if(t.includes('high_speed')||t==='train_high_speed'||/^ic(?:_|$)/.test(nm))return'high';if(!light&&(t==='train_normal'||t==='rail'||t.includes('train_normal')))return'rail';return light?'light':'other'}
-function skey(r){const c=cls(r),n=rnum(r),id=(c==='tram'||c==='bus')&&Number.isFinite(n)?String(n):norm(rname(r));return`${c}|${id}|${color(r)}`}
-function meta(data){const m=new Map();for(const s of data.stations||[])m.set(String(s.id??s.hexId??s.stationId??''),String(s.name??''));return m}
-function alias(name){const n=norm(name);if(['aleje_osamasona','stare_miasto','muzeum_narodowa','krolewska'].includes(n))return'hub:rynek';if(['folityn_wity','wity_pkm'].includes(n))return'hub:wity';if(n==='folityn_centralny')return'hub:centralny';return's:'+n}
-function display(a,n){if(a==='hub:rynek')return'RYNEK';if(a==='hub:wity')return'Wity';if(a==='hub:centralny')return'Folityn Centralny';return n[0]||a.replace(/^s:/,'').replaceAll('_',' ')}
-function nodesFrom(data,m){const o=new Map();for(const r of data.routes||[])for(const s of stops(r)){const id=sid(s),p=pt(s);if(!id||!p)continue;const name=m.get(id)||String(s?.name??id),a=alias(name);if(!o.has(a))o.set(a,{names:new Set(),pts:[]});o.get(a).names.add(name);o.get(a).pts.push(p)}const out=new Map();for(const[a,x]of o){const names=[...x.names],raw={x:median(x.pts.map(p=>p.x)),z:median(x.pts.map(p=>p.z))};out.set(a,{alias:a,name:display(a,names),names,raw,pos:null,services:new Set(),oneWay:new Set()})}return out}
-function seq(r,m,nodes){const a=[];for(const s of stops(r)){const id=sid(s),name=m.get(id)||String(s?.name??id),x=alias(name);if(nodes.has(x)&&a.at(-1)!==x)a.push(x)}return a}
-function rawDist(a,b,nodes){const A=nodes.get(a)?.raw,B=nodes.get(b)?.raw;return A&&B?Math.hypot(B.x-A.x,B.z-A.z):1e9}
-function variantScore(s,nodes){let L=0;for(let i=1;i<s.length;i++)L+=rawDist(s[i-1],s[i],nodes);const D=Math.max(1,rawDist(s[0],s.at(-1),nodes));return L/D+s.length*.002}
-function servicesFrom(data,m,nodes){const g=new Map();for(const r of data.routes||[]){if(cls(r)==='other')continue;const k=skey(r),s=seq(r,m,nodes);if(s.length<2)continue;if(!g.has(k))g.set(k,[]);g.get(k).push({r,s})}const out=[];for(const[k,v]of g){v.sort((a,b)=>variantScore(a.s,nodes)-variantScore(b.s,nodes));const base=[...v[0].s],on=new Set(base),extras=[];for(const e of v.slice(1))for(const a of e.s)if(!on.has(a)&&!extras.includes(a))extras.push(a);const r=v[0].r,s={key:k,name:rname(r)||k,color:color(r),class:cls(r),number:rnum(r),path:base,extras};out.push(s);for(const a of base)nodes.get(a)?.services.add(k);for(const a of extras){nodes.get(a)?.services.add(k);nodes.get(a)?.oneWay.add(k)}}return out.sort((a,b)=>a.class.localeCompare(b.class)||(a.number??9999)-(b.number??9999)||a.name.localeCompare(b.name))}
-function initial(nodes){const v=[...nodes.values()];if(!v.length)return;const xs=v.map(n=>-n.raw.x),ys=v.map(n=>-n.raw.z),mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys),sc=Math.min(1860/Math.max(1,mxx-mnx),1210/Math.max(1,mxy-mny));for(const n of v)n.pos={x:120+(-n.raw.x-mnx)*sc,y:120+(-n.raw.z-mny)*sc}}
-function find(nodes,...names){const w=new Set(names.flat().map(norm));for(const n of nodes.values())if(n.names.some(x=>w.has(norm(x)))||w.has(norm(n.name)))return n;return null}
-function axis(nodes,names,ang,anchor){const arr=names.map(x=>find(nodes,Array.isArray(x)?x:[x])).filter(Boolean);if(arr.length<2)return;const an=find(nodes,anchor)||arr[0],idx=Math.max(0,arr.indexOf(an)),u={x:Math.cos(ang),y:Math.sin(ang)};arr[idx].pos={...an.pos};for(let i=idx+1;i<arr.length;i++){const d=clamp(Math.hypot(arr[i].raw.x-arr[i-1].raw.x,arr[i].raw.z-arr[i-1].raw.z)*.018,72,128);arr[i].pos={x:arr[i-1].pos.x+u.x*d,y:arr[i-1].pos.y+u.y*d}}for(let i=idx-1;i>=0;i--){const d=clamp(Math.hypot(arr[i].raw.x-arr[i+1].raw.x,arr[i].raw.z-arr[i+1].raw.z)*.018,72,128);arr[i].pos={x:arr[i+1].pos.x-u.x*d,y:arr[i+1].pos.y-u.y*d}}}
-function protectedLayout(nodes){const r=find(nodes,'Rogowska Centrum Miejskie'),ry=nodes.get('hub:rynek'),fc=nodes.get('hub:centralny');if(r&&ry)ry.pos={x:r.pos.x-190,y:r.pos.y+10};if(ry&&fc)fc.pos={x:ry.pos.x+65,y:ry.pos.y-125};axis(nodes,[['Wzgórzyn PKM','Wzgorzyn PKM'],['Rakoniewicka'],['Astrolitowska'],['Końcowa','Koncowa'],['Kraszewska'],['Lepianki'],['Kobylskiego']],-Math.PI/4,['Wzgórzyn PKM','Wzgorzyn PKM']);axis(nodes,[['Rondo Larcho'],['Most Śródmiejski','Most Srodmiejski'],['Sucharskiego'],['Rynek Chomicki'],['Polna'],['Rodowa'],['Muzea']],Math.PI/4,['Rondo Larcho']);axis(nodes,[['Rogowska Centrum Miejskie'],['Witkowskiego'],['Rogowska/Dąbka','Rogowska/Dabka'],['Rogowska'],['Charlińska','Charlinska'],['Soperka'],['Szwedzka/Norweska','Szwedzka Norweska']],Math.PI/4,['Rogowska Centrum Miejskie']);axis(nodes,[['Rogowska Centrum Miejskie'],['Maniaka'],['Rondo Moryta-Niejawskiego'],['Grochowa'],['Folityn Jamnikowsko','Jamnikowsko']],0,['Rogowska Centrum Miejskie']);const A=find(nodes,'Folityn Centralny'),B=find(nodes,'Drzewiec PKM');if(A&&B){const raw=Math.atan2(B.pos.y-A.pos.y,B.pos.x-A.pos.x),opts=[Math.PI/4,-Math.PI/4,3*Math.PI/4,-3*Math.PI/4],ang=opts.reduce((q,x)=>Math.abs(Math.atan2(Math.sin(x-raw),Math.cos(x-raw)))<Math.abs(Math.atan2(Math.sin(q-raw),Math.cos(q-raw)))?x:q,opts[0]);axis(nodes,[['Folityn Centralny'],['Folityn Drzewiec'],['Drzewiec PKM'],['Słonecznikowa','Slonecznikowa'],['Wypycha'],['Brzozowo']],ang,['Folityn Centralny'])}}
-function edgeKey(a,b){return a<b?`${a}|${b}`:`${b}|${a}`}function edgesOf(services){const m=new Map();for(const s of services)for(let i=1;i<s.path.length;i++){const a=s.path[i-1],b=s.path[i];if(a===b)continue,k=edgeKey(a,b);if(!m.has(k))m.set(k,{a:a<b?a:b,b:a<b?b:a,services:[]});m.get(k).services.push(s.key)}for(const e of m.values())e.services=[...new Set(e.services)].sort();return m}
-function oct(A,B){const dx=B.x-A.x,dy=B.y-A.y,ax=Math.abs(dx),ay=Math.abs(dy),sx=Math.sign(dx)||1,sy=Math.sign(dy)||1,p=[{...A}];if(ax<1||ay<1||Math.abs(ax-ay)<18){p.push({...B});return p}if(ax>ay)p.push({x:A.x+sx*ay,y:A.y+sy*ay});else p.push({x:A.x+sx*ax,y:A.y+sy*ax});p.push({...B});return p}function geom(e,nodes){const A=nodes.get(e.a)?.pos,B=nodes.get(e.b)?.pos;return A&&B?oct(A,B):[]}function dpath(p){if(!p.length)return'';return'M '+p.map(x=>`${x.x.toFixed(1)} ${x.y.toFixed(1)}`).join(' L ')}
-function offset(p,o){if(Math.abs(o)<.01)return p.map(x=>({...x}));return p.map((x,i)=>{let dx,dy;if(i===0){dx=p[1].x-p[0].x;dy=p[1].y-p[0].y}else if(i===p.length-1){dx=p[i].x-p[i-1].x;dy=p[i].y-p[i-1].y}else{dx=p[i+1].x-p[i-1].x;dy=p[i+1].y-p[i-1].y}let L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;if(dx<0||(Math.abs(dx)<1e-6&&dy<0)){nx=-nx;ny=-ny}return{x:x.x+nx*o,y:x.y+ny*o}})}
-function project(P,p){let best=null;for(let i=1;i<p.length;i++){const A=p[i-1],B=p[i],dx=B.x-A.x,dy=B.y-A.y,L2=dx*dx+dy*dy,t=L2?clamp(((P.x-A.x)*dx+(P.y-A.y)*dy)/L2,0,1):0,Q={x:A.x+dx*t,y:A.y+dy*t},dd=dist(P,Q);if(!best||dd<best.d)best={d:dd,p:Q,ang:Math.atan2(dy,dx)}}return best}
-function model(data){const m=meta(data),nodes=nodesFrom(data,m);initial(nodes);const services=servicesFrom(data,m,nodes);protectedLayout(nodes);return{data,m,nodes,services,edges:edgesOf(services)}}
-function css(){if(document.getElementById('fc13style'))return;const s=el('style');s.id='fc13style';s.textContent=`#fc13open{position:fixed;right:18px;bottom:18px;z-index:2147483645;border:1px solid #41516b;background:#111d30;color:#eef4ff;border-radius:10px;padding:10px 13px;font:700 12px system-ui;cursor:pointer;box-shadow:0 5px 20px #0008}#fc13{position:fixed;inset:0;z-index:2147483646;background:#0b1220;color:#e8eef8;font-family:system-ui;display:none}#fc13.open{display:grid;grid-template-columns:1fr 300px}.fcmap{position:relative;overflow:hidden}.fcmap svg{width:100%;height:100%;display:block;touch-action:none;cursor:grab}.fcmap.drag svg{cursor:grabbing}.fctools{position:absolute;left:14px;top:14px;display:flex;gap:6px;z-index:3}.fcbtn{border:1px solid #34445c;background:#111d30;color:#edf4ff;border-radius:8px;padding:8px 10px;font:700 11px system-ui;cursor:pointer}.fcside{border-left:1px solid #27364d;background:#101827;padding:15px;overflow:auto}.fctitle{font-weight:900;font-size:16px}.fcsub{color:#8fa4bf;font-size:11px;margin:3px 0 12px}.fcsec{border-top:1px solid #26354a;padding-top:12px;margin-top:12px}.fcfilter{display:flex;gap:8px;margin:7px 0;font-size:12px}.fcfilter input{accent-color:#70b7ff}.fclabel{font:600 11px system-ui;fill:#e7eef9;paint-order:stroke;stroke:#0b1220;stroke-width:4px;pointer-events:none}.fclabel.major{font-size:14px;font-weight:850}.fchit{stroke:transparent;stroke-width:18;fill:none;pointer-events:stroke;cursor:pointer}.fcstationhit{fill:transparent;stroke:transparent;stroke-width:16;pointer-events:all;cursor:pointer}.fcchip{display:inline-flex;align-items:center;gap:5px;border:1px solid #33455e;border-radius:999px;padding:4px 7px;margin:3px;font-size:10px;background:#162238}.fcswatch{width:9px;height:9px;border-radius:50%}.fcinfo p{font-size:12px;color:#b8c6da;line-height:1.4}.fcone{fill:#0b1220;stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}`;document.head.appendChild(s)}
-function ui(){css();if(document.getElementById('fc13'))return;const b=el('button',null,'🗺 Folityn Custom Map');b.id='fc13open';b.onclick=show;document.body.appendChild(b);const o=el('div');o.id='fc13';const map=el('div','fcmap'),tools=el('div','fctools');const close=el('button','fcbtn','Close'),fit=el('button','fcbtn','Fit');close.onclick=hide;fit.onclick=()=>window.__fc13fit?.();tools.append(close,fit);map.appendChild(tools);const side=el('aside','fcside');side.innerHTML='<div class="fctitle">FOLITYN CUSTOM</div><div class="fcsub">Shared-corridor custom schematic · live MTR data</div>';const f=el('div','fcsec');for(const[k,l]of[['tram','Trams 1–20'],['bus','Buses 100+'],['rail','Normal rail'],['high','High speed / IC']]){const row=el('label','fcfilter'),cb=document.createElement('input');cb.type='checkbox';cb.checked=localStorage.getItem(KEY+k)!=='0';cb.onchange=()=>{localStorage.setItem(KEY+k,cb.checked?'1':'0');render()};row.append(cb,document.createTextNode(l));f.appendChild(row)}side.appendChild(f);const info=el('div','fcsec fcinfo');info.id='fc13info';info.innerHTML='<p>Click a station or route. Drag to pan, mouse wheel to zoom.</p>';side.appendChild(info);o.append(map,side);document.body.appendChild(o)}
-function show(){visible=true;ui();document.getElementById('fc13').classList.add('open');render()}function hide(){visible=false;document.getElementById('fc13')?.classList.remove('open')}function shown(s){const on=k=>localStorage.getItem(KEY+k)!=='0';return s.class==='tram'?on('tram'):s.class==='bus'?on('bus'):s.class==='rail'?on('rail'):s.class==='high'?on('high'):true}
-function render(){if(!visible||!latestData)return;currentModel=model(latestData);const M=currentModel,map=document.querySelector('#fc13 .fcmap');map.querySelector('svg')?.remove();const svg=svgEl('svg',{viewBox:'0 0 2200 1500'}),g=svgEl('g');svg.appendChild(g);map.insertBefore(svg,map.firstChild);const services=M.services.filter(shown),keys=new Set(services.map(s=>s.key)),by=new Map(services.map(s=>[s.key,s])),cnt=new Map();for(const s of services)for(const a of s.path){if(!cnt.has(a))cnt.set(a,new Set());cnt.get(a).add(s.key)}
-for(const e of M.edges.values()){const use=e.services.filter(k=>keys.has(k));if(!use.length)continue;const p=geom(e,M.nodes);if(p.length<2)continue;g.appendChild(svgEl('path',{d:dpath(p),fill:'none',stroke:'#050910','stroke-width':Math.max(10,use.length*5+5),'stroke-linecap':'round','stroke-linejoin':'round'}));use.sort();use.forEach((k,i)=>{const s=by.get(k),op=offset(p,(i-(use.length-1)/2)*4.4),r=svgEl('path',{d:dpath(op),fill:'none',stroke:s.color,'stroke-width':4.2,'stroke-linecap':'round','stroke-linejoin':'round','vector-effect':'non-scaling-stroke'});g.appendChild(r);const h=svgEl('path',{d:dpath(op),class:'fchit'});h.onclick=e=>{e.stopPropagation();routeInfo(s,M)};g.appendChild(h)})}
-for(const s of services){if(!s.extras.length)continue;const poly=[];for(let i=1;i<s.path.length;i++){const e=M.edges.get(edgeKey(s.path[i-1],s.path[i]));if(!e)continue;let p=geom(e,M.nodes);if(e.a!==s.path[i-1])p=[...p].reverse();if(poly.length)p=p.slice(1);poly.push(...p)}for(const a of s.extras){const n=M.nodes.get(a);if(!n||poly.length<2)continue;const pr=project(n.pos,poly);if(!pr||pr.d>160)continue;g.appendChild(svgEl('rect',{x:pr.p.x-3,y:pr.p.y-8,width:6,height:10,rx:2,class:'fcone',transform:`rotate(${pr.ang*180/Math.PI} ${pr.p.x} ${pr.p.y})`}))}}
-for(const n of M.nodes.values()){const c=cnt.get(n.alias)?.size||0;if(!c)continue;const p=n.pos,major=n.alias.startsWith('hub:')||c>=4,gg=svgEl('g');if(n.alias==='hub:rynek'){gg.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:24,fill:'#0b1220',stroke:'#fff','stroke-width':4}));gg.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:14,fill:'#17243a',stroke:'#fff','stroke-width':2}))}else if(n.alias==='hub:centralny'){gg.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:18,fill:'#0b1220',stroke:'#fff','stroke-width':4}));const t=svgEl('text',{x:p.x,y:p.y+4,'text-anchor':'middle',fill:'#fff','font-size':12,'font-weight':900});t.textContent='⇄';gg.appendChild(t)}else if(n.alias==='hub:wity'){gg.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:14,fill:'#0b1220',stroke:'#fff','stroke-width':3}))}else if(c>=4)gg.appendChild(svgEl('rect',{x:p.x-9,y:p.y-9,width:18,height:18,rx:2,fill:'#0b1220',stroke:'#fff','stroke-width':3}));else if(c>=2)gg.appendChild(svgEl('rect',{x:p.x-12,y:p.y-7,width:24,height:14,rx:7,fill:'#0b1220',stroke:'#fff','stroke-width':3}));else gg.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:6,fill:'#0b1220',stroke:'#fff','stroke-width':2.5}));const hit=svgEl('circle',{cx:p.x,cy:p.y,r:16,class:'fcstationhit'});hit.onclick=e=>{e.stopPropagation();stationInfo(n,services)};gg.appendChild(hit);g.appendChild(gg);const side=((n.name.charCodeAt(0)||0)%2)?1:-1,tx=svgEl('text',{x:p.x+10*side,y:p.y-10,'text-anchor':side>0?'start':'end',class:'fclabel'+(major?' major':'')});tx.textContent=n.name;g.appendChild(tx)}panzoom(svg,g,M,services)}
-function stationInfo(n,services){const b=document.getElementById('fc13info'),r=services.filter(s=>s.path.includes(n.alias)||s.extras.includes(n.alias));b.innerHTML=`<h3>${n.name}</h3><p>${n.names.join(' · ')}</p><p>${r.length} visible services</p>`;for(const s of r){const c=el('span','fcchip'),w=el('span','fcswatch');w.style.background=s.color;c.append(w,document.createTextNode(s.name));b.appendChild(c)}}function routeInfo(s,M){const b=document.getElementById('fc13info');b.innerHTML=`<h3>${s.name}</h3><p>${s.class} · one physical schematic path</p><p>${s.path.map(a=>M.nodes.get(a)?.name).filter(Boolean).join(' → ')}</p>`}
-function panzoom(svg,g,M,services){let sc=1,tx=0,ty=0,drag=false,last;const ap=()=>g.setAttribute('transform',`translate(${tx} ${ty}) scale(${sc})`),fit=()=>{const ps=[...M.nodes.values()].filter(n=>[...n.services].some(k=>services.some(s=>s.key===k))).map(n=>n.pos);if(!ps.length)return;const xs=ps.map(p=>p.x),ys=ps.map(p=>p.y),b={x:Math.min(...xs)-90,y:Math.min(...ys)-90,w:Math.max(...xs)-Math.min(...xs)+180,h:Math.max(...ys)-Math.min(...ys)+180},r=svg.getBoundingClientRect();sc=Math.min(r.width/b.w,r.height/b.h)*.95;tx=(r.width/sc-b.w)/2-b.x;ty=(r.height/sc-b.h)/2-b.y;ap()};window.__fc13fit=fit;requestAnimationFrame(fit);svg.onwheel=e=>{e.preventDefault();const r=svg.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,old=sc,ns=clamp(sc*Math.exp(-e.deltaY*.001),.25,5),wx=mx/old-tx,wy=my/old-ty;sc=ns;tx=mx/ns-wx;ty=my/ns-wy;ap()};svg.onpointerdown=e=>{if(e.button!==0)return;drag=true;last={x:e.clientX,y:e.clientY};svg.setPointerCapture(e.pointerId);svg.parentElement.classList.add('drag')};svg.onpointermove=e=>{if(!drag)return;tx+=(e.clientX-last.x)/sc;ty+=(e.clientY-last.y)/sc;last={x:e.clientX,y:e.clientY};ap()};svg.onpointerup=svg.onpointercancel=e=>{drag=false;svg.parentElement.classList.remove('drag')}}
-function capture(env){try{const d=root(env);if(d&&Array.isArray(d.routes)){latestData=clone(d);if(visible)render()}}catch(e){console.warn('[Folityn Custom v13]',e)}}const nativeFetch=window.fetch.bind(window);window.fetch=async function(i,n){const u=typeof i==='string'?i:i?.url||'',r=await nativeFetch(i,n);if(TARGET.test(u))try{capture(JSON.parse(await r.clone().text()))}catch{}return r};try{const p=XMLHttpRequest.prototype,o=p.open,s=p.send;p.open=function(m,u,...x){this.__fc13url=String(u);return o.call(this,m,u,...x)};p.send=function(...x){if(TARGET.test(this.__fc13url||''))this.addEventListener('load',()=>{try{capture(this.responseType==='json'?this.response:JSON.parse(this.responseText))}catch{}},{once:true});return s.apply(this,x)}}catch(e){console.warn('[Folityn Custom v13] XHR',e)}function boot(){if(!document.body)return setTimeout(boot,50);ui()}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+  'use strict';
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const API = '/mtr/api/map/stations-and-routes?dimension=0';
+  const STORE = 'folityn-v13-';
+
+  let network = null;
+  let model = null;
+  let overlay = null;
+  let svg = null;
+  let viewport = null;
+  let infoBox = null;
+  let transform = { scale: 1, x: 0, y: 0 };
+
+  function norm(value) {
+    return String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+  }
+
+  function createSvg(tag, attrs = {}) {
+    const node = document.createElementNS(NS, tag);
+    for (const [key, value] of Object.entries(attrs)) {
+      if (value !== undefined && value !== null) node.setAttribute(key, String(value));
+    }
+    return node;
+  }
+
+  function unwrap(json) {
+    return json && json.data && typeof json.data === 'object' ? json.data : json;
+  }
+
+  function routeStops(route) {
+    if (Array.isArray(route?.stations)) return route.stations;
+    if (Array.isArray(route?.routeStations)) return route.routeStations;
+    if (Array.isArray(route?.platforms)) return route.platforms;
+    return [];
+  }
+
+  function stationId(station) {
+    return String(station?.id ?? station?.hexId ?? station?.stationId ?? '');
+  }
+
+  function pointOf(station) {
+    const x = Number(station?.x ?? station?.position?.x);
+    const z = Number(station?.z ?? station?.position?.z);
+    return Number.isFinite(x) && Number.isFinite(z) ? { x, z } : null;
+  }
+
+  function routeName(route) {
+    return String(route?.name ?? route?.routeName ?? route?.route_name ?? '').trim();
+  }
+
+  function routeNumber(route) {
+    const match = routeName(route).match(/\d+/);
+    return match ? Number(match[0]) : null;
+  }
+
+  function routeColor(route) {
+    const raw = route?.color ?? route?.routeColor;
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      return `#${(raw & 0xffffff).toString(16).padStart(6, '0')}`;
+    }
+    const text = String(raw ?? '').trim();
+    if (/^#?[0-9a-f]{6}$/i.test(text)) return text.startsWith('#') ? text : `#${text}`;
+    if (/^\d+$/.test(text)) {
+      const n = Number(text);
+      if (Number.isFinite(n)) return `#${(n & 0xffffff).toString(16).padStart(6, '0')}`;
+    }
+    return '#7aa2d6';
+  }
+
+  function routeClass(route) {
+    const type = norm(route?.type);
+    const name = norm(routeName(route));
+    const number = routeNumber(route);
+    const light = type.includes('light_rail') || type === 'train_light_rail';
+    if (light && Number.isFinite(number) && number >= 1 && number <= 20) return 'tram';
+    if (light && Number.isFinite(number) && number >= 100) return 'bus';
+    if (type.includes('high_speed') || /^ic(?:_|$)/.test(name)) return 'high';
+    if (type.includes('train_normal') || type === 'rail' || type === 'train') return 'rail';
+    if (light) return 'light';
+    return 'other';
+  }
+
+  function aliasFor(name) {
+    const n = norm(name);
+    if (['aleje_osamasona', 'stare_miasto', 'muzeum_narodowa', 'krolewska'].includes(n)) return 'hub:rynek';
+    if (['folityn_wity', 'wity_pkm'].includes(n)) return 'hub:wity';
+    if (n === 'folityn_centralny') return 'hub:centralny';
+    return `s:${n}`;
+  }
+
+  function median(values) {
+    const sorted = [...values].sort((a, b) => a - b);
+    if (!sorted.length) return 0;
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+
+  function distance(a, b) {
+    return Math.hypot(b.x - a.x, b.y - a.y);
+  }
+
+  function buildModel(data) {
+    const routes = Array.isArray(data?.routes) ? data.routes : [];
+    const stationNames = new Map();
+
+    for (const station of Array.isArray(data?.stations) ? data.stations : []) {
+      const id = stationId(station);
+      if (id) stationNames.set(id, String(station?.name ?? station?.stationName ?? id));
+    }
+
+    const rawNodes = new Map();
+    for (const route of routes) {
+      for (const stop of routeStops(route)) {
+        const id = stationId(stop);
+        const point = pointOf(stop);
+        if (!id || !point) continue;
+        const name = stationNames.get(id) || String(stop?.name ?? id);
+        const alias = aliasFor(name);
+        if (!rawNodes.has(alias)) rawNodes.set(alias, { alias, names: new Set(), points: [] });
+        rawNodes.get(alias).names.add(name);
+        rawNodes.get(alias).points.push(point);
+      }
+    }
+
+    const nodes = new Map();
+    for (const [alias, raw] of rawNodes.entries()) {
+      const names = [...raw.names];
+      const displayName = alias === 'hub:rynek' ? 'RYNEK'
+        : alias === 'hub:wity' ? 'Wity'
+        : alias === 'hub:centralny' ? 'Folityn Centralny'
+        : names[0] || alias.replace(/^s:/, '').replaceAll('_', ' ');
+      nodes.set(alias, {
+        alias,
+        name: displayName,
+        names,
+        raw: {
+          x: median(raw.points.map(p => p.x)),
+          z: median(raw.points.map(p => p.z)),
+        },
+        pos: null,
+        services: new Set(),
+        oneWayServices: new Set(),
+      });
+    }
+
+    const allRawX = [...nodes.values()].map(n => -n.raw.x);
+    const allRawY = [...nodes.values()].map(n => -n.raw.z);
+    const minX = Math.min(...allRawX);
+    const maxX = Math.max(...allRawX);
+    const minY = Math.min(...allRawY);
+    const maxY = Math.max(...allRawY);
+    const mapScale = Math.min(1800 / Math.max(1, maxX - minX), 1180 / Math.max(1, maxY - minY));
+
+    for (const node of nodes.values()) {
+      node.pos = {
+        x: 140 + (-node.raw.x - minX) * mapScale,
+        y: 140 + (-node.raw.z - minY) * mapScale,
+      };
+    }
+
+    function routeSequence(route) {
+      const sequence = [];
+      for (const stop of routeStops(route)) {
+        const id = stationId(stop);
+        const name = stationNames.get(id) || String(stop?.name ?? id);
+        const alias = aliasFor(name);
+        if (!nodes.has(alias)) continue;
+        if (sequence[sequence.length - 1] !== alias) sequence.push(alias);
+      }
+      return sequence;
+    }
+
+    function serviceKey(route) {
+      const cls = routeClass(route);
+      const number = routeNumber(route);
+      const id = (cls === 'tram' || cls === 'bus') && Number.isFinite(number)
+        ? String(number)
+        : norm(routeName(route));
+      return `${cls}|${id}|${routeColor(route)}`;
+    }
+
+    const grouped = new Map();
+    for (const route of routes) {
+      const cls = routeClass(route);
+      if (cls === 'other') continue;
+      const sequence = routeSequence(route);
+      if (sequence.length < 2) continue;
+      const key = serviceKey(route);
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push({ route, sequence });
+    }
+
+    function pathScore(sequence) {
+      let length = 0;
+      for (let i = 1; i < sequence.length; i++) {
+        const a = nodes.get(sequence[i - 1])?.raw;
+        const b = nodes.get(sequence[i])?.raw;
+        if (a && b) length += Math.hypot(b.x - a.x, b.z - a.z);
+      }
+      const first = nodes.get(sequence[0])?.raw;
+      const last = nodes.get(sequence[sequence.length - 1])?.raw;
+      const direct = first && last ? Math.max(1, Math.hypot(last.x - first.x, last.z - first.z)) : 1;
+      return length / direct + sequence.length * 0.002;
+    }
+
+    const services = [];
+    for (const [key, variants] of grouped.entries()) {
+      variants.sort((a, b) => pathScore(a.sequence) - pathScore(b.sequence));
+      const canonical = [...variants[0].sequence];
+      const canonicalSet = new Set(canonical);
+      const extras = [];
+      for (const variant of variants.slice(1)) {
+        for (const alias of variant.sequence) {
+          if (!canonicalSet.has(alias) && !extras.includes(alias)) extras.push(alias);
+        }
+      }
+      const route = variants[0].route;
+      const service = {
+        key,
+        name: routeName(route) || key,
+        number: routeNumber(route),
+        class: routeClass(route),
+        color: routeColor(route),
+        path: canonical,
+        extras,
+      };
+      services.push(service);
+      for (const alias of canonical) nodes.get(alias)?.services.add(key);
+      for (const alias of extras) {
+        nodes.get(alias)?.services.add(key);
+        nodes.get(alias)?.oneWayServices.add(key);
+      }
+    }
+
+    const find = (...names) => {
+      const wanted = new Set(names.flat().map(norm));
+      for (const node of nodes.values()) {
+        if (wanted.has(norm(node.name))) return node;
+        if (node.names.some(name => wanted.has(norm(name)))) return node;
+      }
+      return null;
+    };
+
+    function spacingBetween(a, b) {
+      const ra = nodes.get(a)?.raw;
+      const rb = nodes.get(b)?.raw;
+      if (!ra || !rb) return 100;
+      return Math.max(72, Math.min(128, Math.hypot(rb.x - ra.x, rb.z - ra.z) * 0.018));
+    }
+
+    function forceAxis(nameGroups, angle, anchorNames) {
+      const chain = nameGroups.map(group => find(...(Array.isArray(group) ? group : [group]))).filter(Boolean);
+      if (chain.length < 2) return;
+      const anchor = find(...(Array.isArray(anchorNames) ? anchorNames : [anchorNames])) || chain[0];
+      let index = chain.indexOf(anchor);
+      if (index < 0) index = 0;
+      const unit = { x: Math.cos(angle), y: Math.sin(angle) };
+      const anchorPos = { ...anchor.pos };
+      chain[index].pos = anchorPos;
+      for (let i = index + 1; i < chain.length; i++) {
+        const step = spacingBetween(chain[i - 1].alias, chain[i].alias);
+        chain[i].pos = {
+          x: chain[i - 1].pos.x + unit.x * step,
+          y: chain[i - 1].pos.y + unit.y * step,
+        };
+      }
+      for (let i = index - 1; i >= 0; i--) {
+        const step = spacingBetween(chain[i].alias, chain[i + 1].alias);
+        chain[i].pos = {
+          x: chain[i + 1].pos.x - unit.x * step,
+          y: chain[i + 1].pos.y - unit.y * step,
+        };
+      }
+    }
+
+    // Custom city structure. These move only the named schematic nodes; everything else stays near its Minecraft position.
+    const rcm = find('Rogowska Centrum Miejskie');
+    const rynek = nodes.get('hub:rynek');
+    const centralny = nodes.get('hub:centralny');
+    if (rcm && rynek) rynek.pos = { x: rcm.pos.x - 190, y: rcm.pos.y + 15 };
+    if (rynek && centralny) centralny.pos = { x: rynek.pos.x + 70, y: rynek.pos.y - 125 };
+
+    forceAxis([
+      ['Wzgórzyn PKM', 'Wzgorzyn PKM'],
+      ['Rakoniewicka'],
+      ['Astrolitowska'],
+      ['Końcowa', 'Koncowa'],
+      ['Kraszewska'],
+      ['Lepianki'],
+      ['Kobylskiego'],
+    ], -Math.PI / 4, ['Wzgórzyn PKM', 'Wzgorzyn PKM']);
+
+    forceAxis([
+      ['Rondo Larcho'],
+      ['Most Śródmiejski', 'Most Srodmiejski'],
+      ['Sucharskiego'],
+      ['Rynek Chomicki'],
+      ['Polna'],
+      ['Rodowa'],
+      ['Muzea'],
+    ], Math.PI / 4, ['Rondo Larcho']);
+
+    forceAxis([
+      ['Rogowska Centrum Miejskie'],
+      ['Witkowskiego'],
+      ['Rogowska/Dąbka', 'Rogowska/Dabka'],
+      ['Rogowska'],
+      ['Charlińska', 'Charlinska'],
+      ['Soperka'],
+      ['Szwedzka/Norweska', 'Szwedzka Norweska'],
+    ], Math.PI / 4, ['Rogowska Centrum Miejskie']);
+
+    forceAxis([
+      ['Rogowska Centrum Miejskie'],
+      ['Maniaka'],
+      ['Rondo Moryta-Niejawskiego'],
+      ['Grochowa'],
+      ['Folityn Jamnikowsko', 'Jamnikowsko'],
+    ], 0, ['Rogowska Centrum Miejskie']);
+
+    const drzewiecStart = find('Folityn Centralny');
+    const drzewiecEnd = find('Drzewiec PKM');
+    if (drzewiecStart && drzewiecEnd) {
+      const rawAngle = Math.atan2(
+        drzewiecEnd.pos.y - drzewiecStart.pos.y,
+        drzewiecEnd.pos.x - drzewiecStart.pos.x
+      );
+      const candidates = [Math.PI / 4, -Math.PI / 4, 3 * Math.PI / 4, -3 * Math.PI / 4];
+      const best = candidates.reduce((bestAngle, angle) => {
+        const da = Math.abs(Math.atan2(Math.sin(angle - rawAngle), Math.cos(angle - rawAngle)));
+        const db = Math.abs(Math.atan2(Math.sin(bestAngle - rawAngle), Math.cos(bestAngle - rawAngle)));
+        return da < db ? angle : bestAngle;
+      }, candidates[0]);
+      forceAxis([
+        ['Folityn Centralny'],
+        ['Folityn Drzewiec'],
+        ['Drzewiec PKM'],
+        ['Słonecznikowa', 'Slonecznikowa'],
+        ['Wypycha'],
+        ['Brzozowo'],
+      ], best, ['Folityn Centralny']);
+    }
+
+    const edges = new Map();
+    function edgeKey(a, b) {
+      return a < b ? `${a}|${b}` : `${b}|${a}`;
+    }
+    for (const service of services) {
+      for (let i = 1; i < service.path.length; i++) {
+        const a = service.path[i - 1];
+        const b = service.path[i];
+        if (a === b) continue;
+        const key = edgeKey(a, b);
+        if (!edges.has(key)) edges.set(key, { key, a: a < b ? a : b, b: a < b ? b : a, services: [] });
+        edges.get(key).services.push(service.key);
+      }
+    }
+    for (const edge of edges.values()) edge.services = [...new Set(edge.services)].sort();
+
+    return { nodes, services, edges };
+  }
+
+  function octilinear(a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+    if (ax < 2 || ay < 2 || Math.abs(ax - ay) < 20) return [{ ...a }, { ...b }];
+    const sx = Math.sign(dx) || 1;
+    const sy = Math.sign(dy) || 1;
+    const points = [{ ...a }];
+    if (ax > ay) points.push({ x: a.x + sx * ay, y: a.y + sy * ay });
+    else points.push({ x: a.x + sx * ax, y: a.y + sy * ax });
+    points.push({ ...b });
+    return points;
+  }
+
+  function pathString(points) {
+    if (!points.length) return '';
+    return `M ${points.map(p => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' L ')}`;
+  }
+
+  function offsetPath(points, amount) {
+    if (Math.abs(amount) < 0.001) return points.map(p => ({ ...p }));
+    return points.map((point, index) => {
+      let dx;
+      let dy;
+      if (index === 0) {
+        dx = points[1].x - points[0].x;
+        dy = points[1].y - points[0].y;
+      } else if (index === points.length - 1) {
+        dx = points[index].x - points[index - 1].x;
+        dy = points[index].y - points[index - 1].y;
+      } else {
+        dx = points[index + 1].x - points[index - 1].x;
+        dy = points[index + 1].y - points[index - 1].y;
+      }
+      const len = Math.hypot(dx, dy) || 1;
+      let nx = -dy / len;
+      let ny = dx / len;
+      if (dx < 0 || (Math.abs(dx) < 0.001 && dy < 0)) {
+        nx *= -1;
+        ny *= -1;
+      }
+      return { x: point.x + nx * amount, y: point.y + ny * amount };
+    });
+  }
+
+  function pointToPolyline(point, polyline) {
+    let best = null;
+    for (let i = 1; i < polyline.length; i++) {
+      const a = polyline[i - 1];
+      const b = polyline[i];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const len2 = dx * dx + dy * dy;
+      const t = len2 ? Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / len2)) : 0;
+      const projected = { x: a.x + dx * t, y: a.y + dy * t };
+      const d = distance(point, projected);
+      if (!best || d < best.distance) best = { distance: d, point: projected, angle: Math.atan2(dy, dx) };
+    }
+    return best;
+  }
+
+  function isEnabled(serviceClass) {
+    if (serviceClass === 'tram') return localStorage.getItem(`${STORE}tram`) !== '0';
+    if (serviceClass === 'bus') return localStorage.getItem(`${STORE}bus`) !== '0';
+    if (serviceClass === 'rail') return localStorage.getItem(`${STORE}rail`) !== '0';
+    if (serviceClass === 'high') return localStorage.getItem(`${STORE}high`) !== '0';
+    return true;
+  }
+
+  function injectStyle() {
+    if (document.getElementById('folityn-v13-style')) return;
+    const style = document.createElement('style');
+    style.id = 'folityn-v13-style';
+    style.textContent = `
+      #folityn-v13-open{position:fixed;right:18px;bottom:18px;z-index:2147483646;border:1px solid #43536b;background:#111d30;color:#eef4ff;border-radius:10px;padding:10px 14px;font:700 12px system-ui;cursor:pointer;box-shadow:0 5px 22px #0009}
+      #folityn-v13{position:fixed;inset:0;z-index:2147483647;background:#0b1220;color:#e9f0fa;font-family:system-ui;display:none;grid-template-columns:1fr 300px}
+      #folityn-v13.open{display:grid}
+      .fv13-map{position:relative;overflow:hidden;background:#0b1220}
+      .fv13-map svg{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+      .fv13-map.dragging svg{cursor:grabbing}
+      .fv13-tools{position:absolute;left:14px;top:14px;display:flex;gap:7px;z-index:4}
+      .fv13-button{border:1px solid #34455e;background:#121f33;color:#eef4ff;border-radius:8px;padding:8px 11px;font:700 11px system-ui;cursor:pointer}
+      .fv13-side{background:#101827;border-left:1px solid #26364c;padding:15px;overflow:auto}
+      .fv13-title{font-size:17px;font-weight:900}.fv13-sub{font-size:11px;color:#91a4bd;margin:4px 0 14px}
+      .fv13-section{border-top:1px solid #29394f;margin-top:12px;padding-top:12px}
+      .fv13-filter{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:12px}.fv13-filter input{accent-color:#70b7ff}
+      .fv13-label{font:600 11px system-ui;fill:#e9f0fa;paint-order:stroke;stroke:#0b1220;stroke-width:4px;pointer-events:none}
+      .fv13-label.major{font-size:14px;font-weight:900}
+      .fv13-hit{fill:none;stroke:transparent;stroke-width:18;pointer-events:stroke;cursor:pointer}
+      .fv13-station-hit{fill:transparent;stroke:transparent;stroke-width:16;pointer-events:all;cursor:pointer}
+      .fv13-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid #34455e;background:#162338;border-radius:999px;padding:4px 7px;margin:3px;font-size:10px}.fv13-swatch{width:9px;height:9px;border-radius:50%}
+      .fv13-info p{font-size:12px;color:#b8c7db;line-height:1.45}
+      .fv13-status{font-size:11px;color:#9eb0c8;margin-top:8px}.fv13-error{color:#ff8794}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensureUi() {
+    injectStyle();
+    if (!document.getElementById('folityn-v13-open')) {
+      const open = document.createElement('button');
+      open.id = 'folityn-v13-open';
+      open.textContent = '🗺 Folityn Custom Map';
+      open.addEventListener('click', openMap);
+      document.body.appendChild(open);
+    }
+
+    if (document.getElementById('folityn-v13')) return;
+
+    overlay = document.createElement('div');
+    overlay.id = 'folityn-v13';
+
+    const map = document.createElement('div');
+    map.className = 'fv13-map';
+
+    const tools = document.createElement('div');
+    tools.className = 'fv13-tools';
+    const close = document.createElement('button');
+    close.className = 'fv13-button';
+    close.textContent = 'Close';
+    close.addEventListener('click', () => overlay.classList.remove('open'));
+    const fit = document.createElement('button');
+    fit.className = 'fv13-button';
+    fit.textContent = 'Fit';
+    fit.addEventListener('click', fitMap);
+    const reload = document.createElement('button');
+    reload.className = 'fv13-button';
+    reload.textContent = 'Reload data';
+    reload.addEventListener('click', () => loadAndRender(true));
+    tools.append(close, fit, reload);
+    map.appendChild(tools);
+
+    const side = document.createElement('aside');
+    side.className = 'fv13-side';
+    side.innerHTML = '<div class="fv13-title">FOLITYN CUSTOM</div><div class="fv13-sub">Standalone shared-corridor schematic</div>';
+
+    const filters = document.createElement('div');
+    filters.className = 'fv13-section';
+    const filterDefs = [
+      ['tram', 'Trams 1–20'],
+      ['bus', 'Buses 100+'],
+      ['rail', 'Normal rail'],
+      ['high', 'High speed / IC'],
+    ];
+    for (const [key, label] of filterDefs) {
+      const row = document.createElement('label');
+      row.className = 'fv13-filter';
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = localStorage.getItem(`${STORE}${key}`) !== '0';
+      box.addEventListener('change', () => {
+        localStorage.setItem(`${STORE}${key}`, box.checked ? '1' : '0');
+        if (network) renderMap(false);
+      });
+      row.append(box, document.createTextNode(label));
+      filters.appendChild(row);
+    }
+    side.appendChild(filters);
+
+    infoBox = document.createElement('div');
+    infoBox.className = 'fv13-section fv13-info';
+    infoBox.innerHTML = '<p>Click a station or route. Drag to pan and use the mouse wheel to zoom.</p>';
+    side.appendChild(infoBox);
+
+    const status = document.createElement('div');
+    status.id = 'folityn-v13-status';
+    status.className = 'fv13-status';
+    status.textContent = 'Ready';
+    side.appendChild(status);
+
+    overlay.append(map, side);
+    document.body.appendChild(overlay);
+  }
+
+  async function openMap() {
+    ensureUi();
+    overlay.classList.add('open');
+    if (!network) await loadAndRender(true);
+    else renderMap(false);
+  }
+
+  async function loadAndRender(shouldFit) {
+    const status = document.getElementById('folityn-v13-status');
+    if (status) {
+      status.classList.remove('fv13-error');
+      status.textContent = 'Loading live MTR data…';
+    }
+    try {
+      const response = await fetch(`${API}&_=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`MTR API returned HTTP ${response.status}`);
+      const json = await response.json();
+      network = unwrap(json);
+      if (!Array.isArray(network?.routes)) throw new Error('MTR API response has no routes array');
+      model = buildModel(network);
+      if (status) status.textContent = `${network.routes.length} route variants loaded`;
+      renderMap(shouldFit);
+    } catch (error) {
+      console.error('[Folityn v13]', error);
+      if (status) {
+        status.classList.add('fv13-error');
+        status.textContent = `Load failed: ${error.message}`;
+      }
+      if (infoBox) infoBox.innerHTML = `<p class="fv13-error"><b>Could not load the MTR network.</b><br>${String(error.message)}</p>`;
+    }
+  }
+
+  function renderMap(shouldFit) {
+    if (!model) return;
+    const map = document.querySelector('#folityn-v13 .fv13-map');
+    const oldSvg = map.querySelector('svg');
+    if (oldSvg) oldSvg.remove();
+
+    svg = createSvg('svg', { viewBox: '0 0 2200 1500' });
+    viewport = createSvg('g');
+    svg.appendChild(viewport);
+    map.insertBefore(svg, map.firstChild);
+
+    const visibleServices = model.services.filter(service => isEnabled(service.class));
+    const serviceMap = new Map(visibleServices.map(service => [service.key, service]));
+    const visibleKeys = new Set(serviceMap.keys());
+    const nodeCounts = new Map();
+
+    for (const service of visibleServices) {
+      for (const alias of service.path) {
+        if (!nodeCounts.has(alias)) nodeCounts.set(alias, new Set());
+        nodeCounts.get(alias).add(service.key);
+      }
+    }
+
+    for (const edge of model.edges.values()) {
+      const used = edge.services.filter(key => visibleKeys.has(key));
+      if (!used.length) continue;
+      const a = model.nodes.get(edge.a)?.pos;
+      const b = model.nodes.get(edge.b)?.pos;
+      if (!a || !b) continue;
+      const geometry = octilinear(a, b);
+      const casing = createSvg('path', {
+        d: pathString(geometry),
+        fill: 'none',
+        stroke: '#040810',
+        'stroke-width': Math.max(10, used.length * 5 + 5),
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round',
+      });
+      viewport.appendChild(casing);
+
+      used.sort();
+      used.forEach((key, index) => {
+        const service = serviceMap.get(key);
+        const lane = offsetPath(geometry, (index - (used.length - 1) / 2) * 4.4);
+        const line = createSvg('path', {
+          d: pathString(lane),
+          fill: 'none',
+          stroke: service.color,
+          'stroke-width': 4.2,
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          'vector-effect': 'non-scaling-stroke',
+        });
+        viewport.appendChild(line);
+        const hit = createSvg('path', { d: pathString(lane), class: 'fv13-hit' });
+        hit.addEventListener('click', event => {
+          event.stopPropagation();
+          showRoute(service);
+        });
+        viewport.appendChild(hit);
+      });
+    }
+
+    // One-way stops are visual markers only. They never create new route geometry.
+    for (const service of visibleServices) {
+      if (!service.extras.length) continue;
+      const polyline = [];
+      for (let i = 1; i < service.path.length; i++) {
+        const a = model.nodes.get(service.path[i - 1])?.pos;
+        const b = model.nodes.get(service.path[i])?.pos;
+        if (!a || !b) continue;
+        let part = octilinear(a, b);
+        if (polyline.length) part = part.slice(1);
+        polyline.push(...part);
+      }
+      for (const alias of service.extras) {
+        const node = model.nodes.get(alias);
+        if (!node || polyline.length < 2) continue;
+        const projected = pointToPolyline(node.pos, polyline);
+        if (!projected || projected.distance > 160) continue;
+        const marker = createSvg('rect', {
+          x: projected.point.x - 3,
+          y: projected.point.y - 8,
+          width: 6,
+          height: 12,
+          rx: 2,
+          fill: '#0b1220',
+          stroke: '#ffffff',
+          'stroke-width': 2,
+          transform: `rotate(${projected.angle * 180 / Math.PI} ${projected.point.x} ${projected.point.y})`,
+          'vector-effect': 'non-scaling-stroke',
+        });
+        viewport.appendChild(marker);
+      }
+    }
+
+    for (const node of model.nodes.values()) {
+      const count = nodeCounts.get(node.alias)?.size || 0;
+      if (!count) continue;
+      const p = node.pos;
+      const major = node.alias.startsWith('hub:') || count >= 4;
+      const group = createSvg('g');
+
+      if (node.alias === 'hub:rynek') {
+        group.appendChild(createSvg('circle', { cx: p.x, cy: p.y, r: 27, fill: '#0b1220', stroke: '#ffffff', 'stroke-width': 4 }));
+        group.appendChild(createSvg('circle', { cx: p.x, cy: p.y, r: 16, fill: '#17243a', stroke: '#ffffff', 'stroke-width': 2 }));
+      } else if (node.alias === 'hub:centralny') {
+        group.appendChild(createSvg('circle', { cx: p.x, cy: p.y, r: 19, fill: '#0b1220', stroke: '#ffffff', 'stroke-width': 4 }));
+        const icon = createSvg('text', { x: p.x, y: p.y + 4, 'text-anchor': 'middle', fill: '#ffffff', 'font-size': 12, 'font-weight': 900 });
+        icon.textContent = '⇄';
+        group.appendChild(icon);
+      } else if (node.alias === 'hub:wity') {
+        group.appendChild(createSvg('circle', { cx: p.x, cy: p.y, r: 14, fill: '#0b1220', stroke: '#ffffff', 'stroke-width': 3 }));
+      } else if (count >= 4) {
+        group.appendChild(createSvg('rect', { x: p.x - 9, y: p.y - 9, width: 18, height: 18, rx: 2, fill: '#0b1220', stroke: '#ffffff', 'stroke-width': 3 }));
+      } else if (count >= 2) {
+        group.appendChild(createSvg('rect', { x: p.x - 12, y: p.y - 7, width: 24, height: 14, rx: 7, fill: '#0b1220', stroke: '#ffffff', 'stroke-width': 3 }));
+      } else {
+        group.appendChild(createSvg('circle', { cx: p.x, cy: p.y, r: 6, fill: '#0b1220', stroke: '#ffffff', 'stroke-width': 2.5 }));
+      }
+
+      const stationHit = createSvg('circle', { cx: p.x, cy: p.y, r: 17, class: 'fv13-station-hit' });
+      stationHit.addEventListener('click', event => {
+        event.stopPropagation();
+        showStation(node, visibleServices);
+      });
+      group.appendChild(stationHit);
+      viewport.appendChild(group);
+
+      const side = ((node.name.charCodeAt(0) || 0) % 2) ? 1 : -1;
+      const label = createSvg('text', {
+        x: p.x + 10 * side,
+        y: p.y - 10,
+        'text-anchor': side > 0 ? 'start' : 'end',
+        class: `fv13-label${major ? ' major' : ''}`,
+      });
+      label.textContent = node.name;
+      viewport.appendChild(label);
+    }
+
+    installPanZoom(map);
+    if (shouldFit) requestAnimationFrame(fitMap);
+    else applyTransform();
+  }
+
+  function showStation(node, visibleServices) {
+    const services = visibleServices.filter(service => service.path.includes(node.alias) || service.extras.includes(node.alias));
+    infoBox.innerHTML = `<h3>${node.name}</h3><p>${node.names.join(' · ')}</p><p>${services.length} visible services</p>`;
+    for (const service of services) {
+      const chip = document.createElement('span');
+      chip.className = 'fv13-chip';
+      const swatch = document.createElement('span');
+      swatch.className = 'fv13-swatch';
+      swatch.style.background = service.color;
+      chip.append(swatch, document.createTextNode(service.name));
+      infoBox.appendChild(chip);
+    }
+  }
+
+  function showRoute(service) {
+    infoBox.innerHTML = `<h3>${service.name}</h3><p>${service.class} · one physical schematic path</p><p>${service.path.map(alias => model.nodes.get(alias)?.name).filter(Boolean).join(' → ')}</p>`;
+  }
+
+  function applyTransform() {
+    if (!viewport) return;
+    viewport.setAttribute('transform', `translate(${transform.x} ${transform.y}) scale(${transform.scale})`);
+  }
+
+  function fitMap() {
+    if (!model || !svg) return;
+    const visibleServices = model.services.filter(service => isEnabled(service.class));
+    const visibleKeys = new Set(visibleServices.map(service => service.key));
+    const points = [...model.nodes.values()]
+      .filter(node => [...node.services].some(key => visibleKeys.has(key)))
+      .map(node => node.pos);
+    if (!points.length) return;
+
+    const xs = points.map(p => p.x);
+    const ys = points.map(p => p.y);
+    const minX = Math.min(...xs) - 90;
+    const maxX = Math.max(...xs) + 90;
+    const minY = Math.min(...ys) - 90;
+    const maxY = Math.max(...ys) + 90;
+    const rect = svg.getBoundingClientRect();
+    const scale = Math.min(rect.width / Math.max(1, maxX - minX), rect.height / Math.max(1, maxY - minY)) * 0.94;
+    transform.scale = scale;
+    transform.x = (rect.width / scale - (maxX - minX)) / 2 - minX;
+    transform.y = (rect.height / scale - (maxY - minY)) / 2 - minY;
+    applyTransform();
+  }
+
+  function installPanZoom(map) {
+    let dragging = false;
+    let last = null;
+    svg.addEventListener('wheel', event => {
+      event.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      const mx = event.clientX - rect.left;
+      const my = event.clientY - rect.top;
+      const old = transform.scale;
+      const next = Math.max(0.2, Math.min(5, old * Math.exp(-event.deltaY * 0.001)));
+      const worldX = mx / old - transform.x;
+      const worldY = my / old - transform.y;
+      transform.scale = next;
+      transform.x = mx / next - worldX;
+      transform.y = my / next - worldY;
+      applyTransform();
+    }, { passive: false });
+
+    svg.addEventListener('pointerdown', event => {
+      if (event.button !== 0) return;
+      dragging = true;
+      last = { x: event.clientX, y: event.clientY };
+      svg.setPointerCapture?.(event.pointerId);
+      map.classList.add('dragging');
+    });
+
+    svg.addEventListener('pointermove', event => {
+      if (!dragging) return;
+      transform.x += (event.clientX - last.x) / transform.scale;
+      transform.y += (event.clientY - last.y) / transform.scale;
+      last = { x: event.clientX, y: event.clientY };
+      applyTransform();
+    });
+
+    const stopDrag = () => {
+      dragging = false;
+      map.classList.remove('dragging');
+    };
+    svg.addEventListener('pointerup', stopDrag);
+    svg.addEventListener('pointercancel', stopDrag);
+  }
+
+  function boot() {
+    if (!document.body) {
+      setTimeout(boot, 50);
+      return;
+    }
+    ensureUi();
+    console.info('[Folityn v13.1] UI ready');
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+  else boot();
 })();
