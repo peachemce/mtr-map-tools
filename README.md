@@ -1,23 +1,58 @@
-# MTR Map Tools
+# Folityn Transit Map
 
-Public map viewer and enhanced journey-planning tools for Minecraft Transit Railway.
+Standalone schematic map for the Folityn Minecraft Transit Railway network.
 
-## Public GitHub Pages map
+The map does **not** modify or inject into the MTR dashboard. MTR is used only as the data source. The renderer has its own physical corridor graph, so route directions and one-way stops cannot invent new geometry.
 
-The public site loads a saved snapshot from `data/network.json`, so it stays available even when Minecraft is closed.
+## Run locally
 
-### Publish/update your network
+Requirements: Node.js 18 or newer.
 
-1. Install `export-network.user.js` in Tampermonkey.
-2. Open the MTR web map at `http://localhost:8888/` while Minecraft is running.
-3. Click **Export public map** in the bottom-right corner.
-4. The userscript downloads `network.json`.
-5. Upload that file to this repository as `data/network.json`.
-6. GitHub Pages will then show the updated public network.
+```bash
+npm start
+```
 
-The static snapshot contains the network structure needed for the public map. Live data such as player positions and current departures only exists while the MTR server is running and is not stored in the public snapshot by default.
+Then open:
 
-## GitHub Pages
+```text
+http://127.0.0.1:5173
+```
 
-In repository **Settings → Pages**, publish from the `main` branch and `/ (root)` folder.
+Keep Minecraft/MTR running at `http://127.0.0.1:8888` for live network data. If MTR is unavailable, the server automatically falls back to `data/network.json`.
 
+No npm packages are required.
+
+## How the schematic works
+
+The physical map is configured in `data/schematic.json`:
+
+- `hubs`: fixed major nodes such as **RYNEK**, **Folityn Centralny**, and **Wity**.
+- `nodes`: fixed station positions.
+- `corridors`: ordered physical infrastructure. Routes are routed across these corridors rather than drawing straight lines between served stops.
+- `aliases`: groups multiple MTR stations into one schematic hub. For example, Królewska, Stare Miasto, Aleje Osamasona and Muzeum Narodowa are grouped as **RYNEK**.
+
+This means a route that skips a stop still uses the same road/track. The skipped stop simply has no service marker for that route.
+
+## Layout editor
+
+Click **Edit layout** in the sidebar and drag stations/hubs. Edits are stored in browser local storage and do not change `data/schematic.json` automatically.
+
+- **Export edits** downloads your local coordinate overrides as JSON.
+- **Reset edits** returns to the committed schematic.
+
+Once a layout is satisfactory, the coordinates can be copied into `data/schematic.json`.
+
+## Filters
+
+The standalone map separates:
+
+- Trams: numeric lines 1–20
+- Buses: numeric lines 100+
+- Normal rail
+- High-speed / IC
+
+Opposite-direction variants of the same numbered tram/bus service are grouped into one service color on the shared infrastructure.
+
+## Public snapshot
+
+`data/network.json` is still usable as a public/offline snapshot. GitHub Pages can render that snapshot, but live MTR data requires the local `server.js` proxy.
