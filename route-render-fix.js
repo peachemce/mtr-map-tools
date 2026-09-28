@@ -10,8 +10,6 @@
     const name = String(r?.name ?? r?.routeName ?? r?.route_name ?? '').trim();
     if (/^\d{1,3}$/.test(name)) return Number(name);
 
-    // Accept a numeric line prefix only when it is clearly formatted as a line designator,
-    // e.g. "175 - Airport". Never pick up a number later in a textual name.
     const prefixed = name.match(/^(\d{1,3})\s*(?:[-–—:]\s*.+)$/);
     return prefixed ? Number(prefixed[1]) : null;
   };
@@ -26,9 +24,6 @@
     if (light && Number.isFinite(n) && n >= 100) return 'bus';
     if (t.includes('high_speed') || /^ic(?:\b|\s|[-–—:])/.test(name)) return 'high';
     if (!light && (t.includes('train_normal') || t === 'rail' || t.includes('train'))) return 'rail';
-
-    // Named light-rail routes in this network are surface services; keeping them named
-    // prevents them being merged with numeric tram lines by accident.
     if (light) return 'bus';
     if (Number.isFinite(n) && n >= 100) return 'bus';
     if (Number.isFinite(n) && n >= 1 && n <= 20) return 'tram';
@@ -41,7 +36,6 @@
     if ((cls === 'tram' || cls === 'bus') && Number.isFinite(n)) return `${cls}:${n}`;
 
     let name = String(r?.name ?? r?.routeName ?? r?.route_name ?? '').trim();
-    // Remove only obvious directional suffixes. Keep the actual service name intact.
     name = name.replace(/\s+(?:to|towards?)\s+.+$/i, '').trim();
     const key = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
@@ -53,7 +47,7 @@
     return Number.isFinite(n) ? String(n) : String(r?.name ?? r?.routeName ?? r?.route_name ?? 'unnamed');
   };
 
-  // Prefer a reasonably complete direction without rewarding huge detours.
+  // Prefer a complete direction, but heavily punish genuine geographic detours.
   window.variantScore = function variantScoreFixed(seq, nodes) {
     if (!seq || seq.length < 2) return 1e12;
     let length = 0;
@@ -77,11 +71,8 @@
 
     if (ax < eps || ay < eps || Math.abs(ax - ay) < eps) return [[x1, y1], [x2, y2]];
 
-    // One 45° leg + one horizontal/vertical leg. This guarantees that every piece
-    // is 0°, 45° or 90° while keeping both station endpoints fixed.
-    if (ax > ay) {
-      return [[x1, y1], [x1 + sx * ay, y2], [x2, y2]];
-    }
+    // One 45° leg plus one horizontal/vertical leg. Every visible piece is 0/45/90°.
+    if (ax > ay) return [[x1, y1], [x1 + sx * ay, y2], [x2, y2]];
     return [[x1, y1], [x2, y1 + sy * ax], [x2, y2]];
   }
 
@@ -125,19 +116,6 @@
     observer.observe(corridor, { childList: true, subtree: true });
     observer.observe(routes, { childList: true, subtree: true });
     octilinearize();
-
-    // If the first build happened before this patch loaded, force one rebuild through the
-    // existing reset button so the corrected service identities are applied immediately.
-    let attempts = 0;
-    const rebuildWhenReady = setInterval(() => {
-      attempts++;
-      const status = document.getElementById('snapshotStatus')?.textContent || '';
-      if (/Live MTR|Saved MTR/.test(status)) {
-        clearInterval(rebuildWhenReady);
-        document.getElementById('resetLayout')?.click();
-        setTimeout(octilinearize, 50);
-      } else if (attempts > 80) clearInterval(rebuildWhenReady);
-    }, 50);
   }
 
   startObserver();
