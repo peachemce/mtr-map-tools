@@ -47,7 +47,8 @@
     return Number.isFinite(n) ? String(n) : String(r?.name ?? r?.routeName ?? r?.route_name ?? 'unnamed');
   };
 
-  // Prefer a complete direction, but heavily punish genuine geographic detours.
+  // Now that unrelated named services cannot merge into numeric lines, prefer the
+  // more complete direction. Only an extreme geographic detour beats stop coverage.
   window.variantScore = function variantScoreFixed(seq, nodes) {
     if (!seq || seq.length < 2) return 1e12;
     let length = 0;
@@ -59,8 +60,8 @@
     const a = nodes.get(seq[0]), b = nodes.get(seq[seq.length - 1]);
     const direct = a && b ? Math.hypot(b.x - a.x, b.y - a.y) : 0;
     const detour = direct > 1 ? length / direct : 1;
-    const detourPenalty = Math.max(0, detour - 1.45) * 5000;
-    return detourPenalty - seq.length * 35 - direct * 0.02;
+    const extremePenalty = Math.max(0, detour - 2.8) * 100000;
+    return extremePenalty - seq.length * 1000 + detour * 10;
   };
 
   function octilinearPoints(x1, y1, x2, y2) {
