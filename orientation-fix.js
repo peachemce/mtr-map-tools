@@ -1,13 +1,10 @@
 // Keep the standalone schematic in the raw MTR/Minecraft orientation.
 // app.js currently projects both axes with a minus sign, which rotates the whole city 180°.
-// Rather than touching the corridor logic, wrap buildModel and mirror the finished model once.
+// Rather than touching the corridor logic, mirror the finished model in data space.
 (() => {
-  const originalBuildModel = buildModel;
-
-  buildModel = function(data) {
-    const model = originalBuildModel(data);
+  function flipModel(model) {
     const nodes = [...model.nodes.values()];
-    if (!nodes.length) return model;
+    if (!nodes.length || model.__orientationFixed) return model;
 
     const minX = Math.min(...nodes.map(n => n.x));
     const maxX = Math.max(...nodes.map(n => n.x));
@@ -25,12 +22,24 @@
       }
     }
 
-    // Existing saved manual edits were made in the old rotated orientation.
-    // Ignore them for this corrected orientation unless the user makes new edits afterwards.
-    state.edits = {};
-    localStorage.removeItem(EDIT_KEY);
-
+    model.__orientationFixed = true;
     rebuildEdges(model);
     return model;
+  }
+
+  const originalBuildModel = buildModel;
+  buildModel = function(data) {
+    return flipModel(originalBuildModel(data));
   };
+
+  // Existing saved edits were made in the old rotated orientation.
+  state.edits = {};
+  localStorage.removeItem(EDIT_KEY);
+
+  // Race-safe: if app.js already finished loading the network, fix that model immediately too.
+  if (state.model) {
+    flipModel(state.model);
+    render();
+    fit();
+  }
 })();
