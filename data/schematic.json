@@ -109,6 +109,74 @@
       1540,
       -1520
     ],
+    "Wity PKM": [
+      -760,
+      480
+    ],
+    "Wity Dolne": [
+      -680,
+      360
+    ],
+    "Wilhelma": [
+      -640,
+      300
+    ],
+    "Mostowa": [
+      -600,
+      240
+    ],
+    "WOS Boisko": [
+      -540,
+      -110
+    ],
+    "Korzeniewskiego": [
+      -520,
+      -230
+    ],
+    "Wielowice Mniejsze Korytarz": [
+      -500,
+      -350
+    ],
+    "FLN Bank": [
+      -480,
+      -470
+    ],
+    "Folityn Drzewnia": [
+      1500,
+      -960
+    ],
+    "Austrowęgierska": [
+      1380,
+      -1080
+    ],
+    "Orzechowa": [
+      1260,
+      -1200
+    ],
+    "Os. Drzewnia": [
+      1140,
+      -1320
+    ],
+    "Lipków/Dworcowa": [
+      1020,
+      -1440
+    ],
+    "Lipków/Osieckiej": [
+      900,
+      -1560
+    ],
+    "Lipków/Puszczowska": [
+      780,
+      -1680
+    ],
+    "Lipków/Towarowy": [
+      660,
+      -1800
+    ],
+    "Lipków/Os. Leśne": [
+      540,
+      -1920
+    ],
     "Kraszewo/Magazynowa": [
       1640,
       -1620
@@ -326,8 +394,8 @@
       1080
     ],
     "Polany/Wzgórza": [
-      1550,
-      -620
+      1600,
+      -840
     ],
     "Polany/Północna II": [
       1600,
@@ -342,8 +410,76 @@
       240
     ],
     "Krakowska(Plac)": [
-      -680,
-      160
+      -520,
+      120
+    ],
+    "Plac 31 Lipca": [
+      -600,
+      180
+    ],
+    "Plac Ludowy": [
+      -360,
+      520
+    ],
+    "Plac Cukrowy": [
+      -500,
+      400
+    ],
+    "Łucznicza": [
+      -540,
+      60
+    ],
+    "Kwitnącej Wiśni": [
+      -370,
+      -175
+    ],
+    "Desperaka": [
+      -300,
+      -175
+    ],
+    "Stalowa": [
+      -160,
+      1120
+    ],
+    "Rondo Niepodległości": [
+      -140,
+      1060
+    ],
+    "Przełęczyna": [
+      -120,
+      1000
+    ],
+    "Miodowa": [
+      -100,
+      940
+    ],
+    "Pszenna": [
+      -80,
+      880
+    ],
+    "Powstańców Folityna": [
+      -60,
+      820
+    ],
+    "Wielkopolska": [
+      -40,
+      770
+    ],
+    "Folityńska": [
+      -20,
+      730
+    ],
+    "Most Św. Antoniego II": [
+      -600,
+      120
+    ],
+    "Most Św. Antoniego": [
+      -720,
+      120
+    ],
+    "Nowe Miasto I": [
+      -720,
+      0
     ],
     "Kurzowa": [
       1580,
@@ -368,6 +504,62 @@
     "Owczarek": [
       1700,
       -1520
+    ],
+    "Stawy": [
+      1080,
+      -960
+    ],
+    "Śramowo": [
+      1200,
+      -1000
+    ],
+    "Kanadyjska": [
+      1320,
+      -1040
+    ],
+    "Polany/Szkolna": [
+      2020,
+      -1500
+    ],
+    "Polany/Szkoła nr.1": [
+      2050,
+      -1470
+    ],
+    "Polany/Wschodnia": [
+      1670,
+      -960
+    ],
+    "Poranna": [
+      1620,
+      -840
+    ],
+    "@603-north-a": [
+      80,
+      -520
+    ],
+    "@603-north-b": [
+      600,
+      -680
+    ],
+    "@603-north-c": [
+      1120,
+      -760
+    ],
+    "Kraszewo/Kubickiej": [
+      1950,
+      -1630
+    ],
+    "Kraszewo/Racinowskiej": [
+      1900,
+      -1680
+    ],
+    "Kraszewo/Sobel": [
+      1850,
+      -1730
+    ],
+    "Kraszewo/Kościół": [
+      1800,
+      -1780
     ]
   },
   "corridors": [
@@ -535,6 +727,109 @@
       ]
     },
     {
+      "id": "line180-main",
+      "label": "180 · Wzgórzyn · Solarna",
+      "stations": [
+        "Wzgórzyn PKM",
+        "Astrolitowska",
+        "Końcowa",
+        "Stawy",
+        "Śramowo",
+        "Kanadyjska",
+        "Laskowskiego",
+        "Kurzowa",
+        "Trzebawska",
+        "Solarna",
+        "Solarna II",
+        "Solarna III",
+        "Owczarek",
+        "Solarna CH"
+      ]
+    },
+    {
+      "id": "line180-return",
+      "label": "180 · Laskowskiego Wiadukt",
+      "stations": [
+        "Solarna CH",
+        "Owczarek",
+        "Solarna III",
+        "Solarna II",
+        "Solarna",
+        "Trzebawska",
+        "Kurzowa",
+        "Laskowskiego",
+        "Laskowskiego Wiadukt",
+        "Kobylskiego",
+        "Lepianki",
+        "Kraszewska",
+        "Końcowa",
+        "Astrolitowska",
+        "Wzgórzyn PKM"
+      ]
+    },
+    {
+      "id": "line603",
+      "label": "603 · Wity · Lipków",
+      "stations": [
+        "Wity PKM",
+        "Wity Dolne",
+        "Wilhelma",
+        "Mostowa",
+        "Plac 31 Lipca",
+        "WOS",
+        "WOS Boisko",
+        "Korzeniewskiego",
+        "Wielowice Mniejsze Korytarz",
+        "FLN Bank",
+        "@603-north-a",
+        "@603-north-b",
+        "@603-north-c",
+        "Poranna",
+        "Folityn Drzewnia",
+        "Austrowęgierska",
+        "Orzechowa",
+        "Os. Drzewnia",
+        "Lipków/Dworcowa",
+        "Lipków/Osieckiej",
+        "Lipków/Puszczowska",
+        "Lipków/Towarowy",
+        "Lipków/Os. Leśne"
+      ]
+    },
+    {
+      "id": "triangle-miedzymiejska",
+      "label": "Międzymiejska · Wiśni · Rynek Wielowicki",
+      "stations": [
+        "Międzymiejska",
+        "Kwitnącej Wiśni",
+        "Rynek Wielowicki"
+      ]
+    },
+    {
+      "id": "triangle-wielowicka",
+      "label": "Wielowicka · Desperaka · Rynek Wielowicki",
+      "stations": [
+        "Wielowicka",
+        "Desperaka",
+        "Rynek Wielowicki"
+      ]
+    },
+    {
+      "id": "folitynska-stalowa",
+      "label": "Folityńska · Stalowa",
+      "stations": [
+        "Most Śródmiejski",
+        "Folityńska",
+        "Wielkopolska",
+        "Powstańców Folityna",
+        "Pszenna",
+        "Miodowa",
+        "Przełęczyna",
+        "Rondo Niepodległości",
+        "Stalowa"
+      ]
+    },
+    {
       "id": "rakoniewicka",
       "label": "Wzgórzyn · Rakoniewicka II",
       "stations": [
@@ -563,7 +858,48 @@
         "Rakoniewicka",
         "Wzgórzyn PKM"
       ]
+    },
+    {
+      "id": "antoniego-l",
+      "label": "Most Św. Antoniego · Nowe Miasto I",
+      "stations": [
+        "Most Św. Antoniego II",
+        "Most Św. Antoniego",
+        "Nowe Miasto I",
+        "Rondo Rameksi"
+      ]
+    },
+    {
+      "id": "polany-710",
+      "label": "710 · Polany · Wzgórzyn",
+      "stations": [
+        "Kraszewo/Kościół",
+        "Kraszewo/Sobel",
+        "Kraszewo/Racinowskiej",
+        "Kraszewo/Kubickiej",
+        "Polany/Szkolna",
+        "Polany/Szkoła nr.1",
+        "Polany/Kolejowa",
+        "Polany/Straż Pożarna",
+        "Polany/Rynek",
+        "Polany/Ukryta",
+        "Polany/Wschodnia",
+        "Polany/Wzgórza",
+        "Poranna",
+        "Trzebawska",
+        "Solarna",
+        "Solarna II",
+        "Solarna III",
+        "Owczarek",
+        "Solarna CH",
+        "Konopnickiej",
+        "Laskowskiego Wiadukt",
+        "Końcowa",
+        "Astrolitowska",
+        "Wzgórzyn PKM"
+      ]
     }
   ],
   "geographicScale": 0.35
 }
+
