@@ -1,58 +1,51 @@
-# Folityn Transit Map
+# Folityn Transit — live schematic
 
-Standalone schematic map for the Folityn Minecraft Transit Railway network.
+A standalone map connected to the running Minecraft Transit Railway server. There is no snapshot fallback and no snapshot-update step.
 
-The map does **not** modify or inject into the MTR dashboard. MTR is used only as the data source. The renderer has its own physical corridor graph, so route directions and one-way stops cannot invent new geometry.
+## Run
 
-## Run locally
+Requires Node.js 18+; no npm dependencies.
 
-Requirements: Node.js 18 or newer.
+1. Keep Minecraft and the MTR web map running at `http://127.0.0.1:8888`.
+2. Run `npm start` in this repository.
+3. Open `http://127.0.0.1:5173`.
 
-```bash
+The browser requests fresh stations and routes every 15 seconds through the local server. Refresh preserves your view and filters. When MTR becomes unavailable, the last received map stays visible with an explicit stale status; an initial failure shows connection instructions. Reconnection is automatic. Editing temporarily pauses polling.
+
+To use another MTR server, set `MTR_URL` to its full stations-and-routes endpoint before starting the map. For example, in PowerShell:
+
+```powershell
+$env:MTR_URL = 'http://127.0.0.1:8888/mtr/api/map/stations-and-routes?dimension=0'
 npm start
 ```
 
-Then open:
+The bridge binds only to loopback. GitHub Pages cannot run Node or reach another person's Minecraft server. The Pages frontend attempts to use your local bridge at port 5173; browser local-network restrictions may block that connection. Opening the local map directly is the supported, reliable live experience. Historical snapshot and userscript files remain in the repository but are neither loaded nor served by the new local app.
 
-```text
-http://127.0.0.1:5173
-```
+## Fixed geometry
 
-Keep Minecraft/MTR running at `http://127.0.0.1:8888` for live network data. If MTR is unavailable, the server automatically falls back to `data/network.json`.
+`data/schematic.json` is the active infrastructure configuration, separate from live service data:
 
-No npm packages are required.
+- **Rynek:** Stare Miasto → Aleje Osamasona → Muzeum Narodowa → Królewska → Stare Miasto, drawn as a compact one-way diamond. The stops are grouped visually under Rynek and retain their own service details. Krakowska is outside the loop.
+- **Eastern / Wzgórzyn corridor:** Dworzec Wschodni through Wzgórzyn PKM to Kraszewo/Nowa, straight northeast at 45°.
+- **Drzewiec:** Rynek Wielowicki to Drzewiec PKM, straight north–south.
+- **Central spine:** Folityn Centralny → Wiadukt Torowy → Rondo Larcho → Most Śródmiejski, straight north–south.
+- **Western cross street:** Teatr Miejski to Rondo Rameksi, perpendicular to the central spine.
+- **Rogowska:** Rogowska Centrum Miejskie to Szwedzka/Norweska, southeast at 45°, mirrored against Wzgórzyn. Rogowska Centrum Miejskie joins the central spine through one shared junction.
+- **Muzea:** Most Śródmiejski to Muzea, a lower parallel southeast diagonal. The separate Larcho/Sucharskiego branch joins at Rynek Chomicki.
+- **Jamnikowsko:** the eastern branch enters Witkowskiego, then Rogowska Centrum Miejskie, before reaching the central spine.
 
-## How the schematic works
+All rendering uses straight segments at 0°, 45° or 90°, never Bezier curves. Surrounding stops follow a similarity transform of their nearest corridor: rotation, translation and schematic scaling. Direction variants share physical edges, while station service lists come only from actual MTR stops (passing through a station does not invent a stop). The public numeric route name takes precedence over MTR's directional `number` field.
 
-The physical map is configured in `data/schematic.json`:
+Unknown/new stops appear from live coordinates. The named corridor anchors remain fixed; add newly commissioned infrastructure anchors to the schematic configuration when they need an explicit corridor lock. This updates layout rules, not network snapshots.
 
-- `hubs`: fixed major nodes such as **RYNEK**, **Folityn Centralny**, and **Wity**.
-- `nodes`: fixed station positions.
-- `corridors`: ordered physical infrastructure. Routes are routed across these corridors rather than drawing straight lines between served stops.
-- `aliases`: groups multiple MTR stations into one schematic hub. For example, Królewska, Stare Miasto, Aleje Osamasona and Muzeum Narodowa are grouped as **RYNEK**.
+## Interaction
 
-This means a route that skips a stop still uses the same road/track. The skipped stop simply has no service marker for that route.
+Search stations (or Rynek), filter services, and use City / Full network or the corridor list to change the view. Labels reveal on hover and avoid overlaps. On narrow screens, the menu button opens the sidebar.
 
-## Layout editor
+Main corridor stops are locked. **Adjust surrounding stops** lets you move other stations on a 20-unit grid. Edits persist in this browser under `folityn-layout-v3`, survive live refresh, and can be exported as JSON. Reset removes only those browser edits.
 
-Click **Edit layout** in the sidebar and drag stations/hubs. Edits are stored in browser local storage and do not change `data/schematic.json` automatically.
+## Validation
 
-- **Export edits** downloads your local coordinate overrides as JSON.
-- **Reset edits** returns to the committed schematic.
+Run `npm test`. Tests cover required corridor relationships, one-way Rynek traversal, skip-stop routing, the Jamnikowsko junction, route grouping, edit persistence, changing live data, upstream failure/timeout, and the server's asset allowlist. GitHub Actions runs the same checks on pushes and pull requests.
 
-Once a layout is satisfactory, the coordinates can be copied into `data/schematic.json`.
-
-## Filters
-
-The standalone map separates:
-
-- Trams: numeric lines 1–20
-- Buses: numeric lines 100+
-- Normal rail
-- High-speed / IC
-
-Opposite-direction variants of the same numbered tram/bus service are grouped into one service color on the shared infrastructure.
-
-## Public snapshot
-
-`data/network.json` is still usable as a public/offline snapshot. GitHub Pages can render that snapshot, but live MTR data requires the local `server.js` proxy.
+Core files: `map-model.js` (pure model and geometry), `app.js` (UI and polling), `server.js` (live bridge), `data/schematic.json` (layout). The former override scripts are not loaded.

@@ -1,45 +1,45 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-
+const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
 const ROOT = __dirname;
-const PORT = Number(process.env.PORT || 5173);
-const MTR_URL = process.env.MTR_URL || 'http://127.0.0.1:8888/mtr/api/map/stations-and-routes?dimension=0';
-const MIME = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon'};
-
-function sendFile(res, file) {
-  fs.stat(file, (err, stat) => {
-    if (err || !stat.isFile()) { res.writeHead(404); res.end('Not found'); return; }
-    res.writeHead(200, {'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control':'no-store'});
-    fs.createReadStream(file).pipe(res);
+const DEFAULT_MTR_URL = 'http://127.0.0.1:8888/mtr/api/map/stations-and-routes?dimension=0';
+const FILES = new Set(['index.html','app.js','map-model.js','styles.css','data/schematic.json']);
+const MIME = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8'};
+function createServer({mtrUrl=process.env.MTR_URL || DEFAULT_MTR_URL, timeout=5000}={}) {
+  const upstreamURL = new URL(mtrUrl);
+  if(!['http:','https:'].includes(upstreamURL.protocol)) throw new Error('MTR_URL must be HTTP or HTTPS');
+  return http.createServer(async (req,res) => {
+    const origin=req.headers.origin;
+    if(origin && (/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin) || origin==='https://peachemce.github.io')) {
+      res.setHeader('Access-Control-Allow-Origin',origin);
+      res.setHeader('Vary','Origin');
+      res.setHeader('Access-Control-Allow-Private-Network','true');
+    }
+    if(req.method==='OPTIONS') {res.writeHead(204,{'Access-Control-Allow-Methods':'GET, OPTIONS'});res.end();return;}
+    if(req.method!=='GET') {res.writeHead(405,{'Allow':'GET, OPTIONS'});res.end();return;}
+    const pathname=new URL(req.url,'http://localhost').pathname;
+    res.setHeader('Cache-Control','no-store');
+    if(pathname==='/api/network') {
+      try {
+        const upstream=await fetch(upstreamURL,{signal:AbortSignal.timeout(timeout)});
+        if(!upstream.ok) throw new Error('MTR HTTP '+upstream.status);
+        const json=await upstream.json(),data=json?.data??json;
+        if(!Array.isArray(data.stations)||!Array.isArray(data.routes)) throw new Error('Invalid stations-and-routes response');
+        res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','X-Folityn-Source':'live'});
+        res.end(JSON.stringify({data,receivedAt:new Date().toISOString(),source:'live'}));
+      } catch(error) {
+        res.writeHead(502,{'Content-Type':'application/json; charset=utf-8'});
+        res.end(JSON.stringify({error:'Live MTR unavailable. Keep Minecraft and its web map running on port 8888.',detail:error.message}));
+      }
+      return;
+    }
+    const name=pathname==='/'?'index.html':pathname.slice(1);
+    if(!FILES.has(name)) {res.writeHead(404);res.end('Not found');return;}
+    fs.readFile(path.join(ROOT,name),(err,bytes)=>{
+      if(err){res.writeHead(404);res.end('Not found');return;}
+      res.writeHead(200,{'Content-Type':MIME[path.extname(name)]});res.end(bytes);
+    });
   });
 }
-
-async function network(res) {
-  try {
-    const upstream = await fetch(MTR_URL, {signal: AbortSignal.timeout(2500)});
-    if (!upstream.ok) throw new Error(`MTR HTTP ${upstream.status}`);
-    const text = await upstream.text();
-    JSON.parse(text);
-    res.writeHead(200, {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Folityn-Source':'live'});
-    res.end(text);
-  } catch (error) {
-    const fallback = path.join(ROOT, 'data', 'network.json');
-    fs.readFile(fallback, 'utf8', (err, text) => {
-      if (err) { res.writeHead(502, {'Content-Type':'application/json'}); res.end(JSON.stringify({error:String(error)})); return; }
-      res.writeHead(200, {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Folityn-Source':'snapshot'});
-      res.end(text);
-    });
-  }
-}
-
-const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  if (url.pathname === '/api/network') return network(res);
-  let rel = decodeURIComponent(url.pathname);
-  if (rel === '/') rel = '/index.html';
-  const file = path.normalize(path.join(ROOT, rel));
-  if (!file.startsWith(ROOT)) { res.writeHead(403); res.end('Forbidden'); return; }
-  sendFile(res, file);
-});
-server.listen(PORT, '127.0.0.1', () => console.log(`Folityn map: http://127.0.0.1:${PORT}`));
+if(require.main===module) createServer().listen(Number(process.env.PORT||5173),'127.0.0.1',()=>console.log('Folityn Transit: http://127.0.0.1:'+(process.env.PORT||5173)));
+module.exports={createServer};

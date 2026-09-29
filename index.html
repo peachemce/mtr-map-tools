@@ -1,63 +1,27 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Folityn Transit Map</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="label-polish.css">
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Folityn Transit · Live map</title><link rel="stylesheet" href="styles.css"></head>
 <body>
 <div id="app">
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-mark">F</div>
-      <div><h1>Folityn Transit</h1><p>Standalone schematic renderer</p></div>
-    </div>
-
-    <div class="snapshot-card">
-      <span class="status-dot" id="statusDot"></span>
-      <div><strong id="snapshotStatus">Loading network…</strong><div id="snapshotTime" class="muted"></div></div>
-    </div>
-
-    <label class="field-label" for="stationSearch">Find station</label>
-    <input id="stationSearch" class="search" type="search" placeholder="Station or hub…" autocomplete="off">
-    <div id="searchResults" class="search-results"></div>
-
-    <div class="section-heading">Network</div>
-    <div id="classFilters" class="class-filters"></div>
-
-    <div class="section-heading">Services</div>
-    <div id="routeList" class="route-list"></div>
-
-    <div class="section-heading">Layout</div>
-    <div class="layout-actions">
-      <button id="editLayout" type="button">Edit layout</button>
-      <button id="exportLayout" type="button">Export edits</button>
-      <button id="resetLayout" type="button">Reset edits</button>
-    </div>
-    <div class="help-card"><strong>Physical corridors first</strong><p>Routes follow fixed schematic corridors. A skipped one-way stop does not create a new road. In Edit layout mode you can drag nodes; changes stay in this browser.</p></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="brand-mark">F<span>↗</span></div><div><h1>Folityn Transit</h1><p>LIVE NETWORK / SCHEMATIC MAP</p></div></div>
+    <div class="connection-card" role="status" aria-live="polite"><span id="statusDot" class="status-dot"></span><div><strong id="connectionStatus">Connecting to MTR…</strong><p id="connectionDetail">127.0.0.1:8888 · refreshes every 15s</p></div></div>
+    <div class="connection-actions"><button id="refresh">↻ Refresh now</button><span id="updatedAt">Waiting for server</span></div>
+    <label class="field-label" for="stationSearch">Find a station</label><input id="stationSearch" class="search" type="search" placeholder="Station, interchange or Rynek…" autocomplete="off"><div id="searchResults" class="search-results"></div>
+    <div class="section-heading">Network <span id="networkCount"></span></div><div id="classFilters" class="class-filters"></div>
+    <div class="section-heading">Services <button id="showAll">Show all</button></div><div id="routeList" class="route-list"></div>
+    <details class="corridor-guide"><summary>Fixed corridors</summary><div id="corridorList"></div><p>Only straight lines and 45° bends. Arrows inside Rynek show the one-way loop; the four stops remain individually selectable.</p></details>
+    <details class="layout-guide"><summary>Adjust surrounding stops</summary><p>Main corridors are locked. Other stops snap to a grid and keep their positions in this browser.</p><div class="layout-actions"><button id="editLayout">Edit layout</button><button id="exportLayout">Export edits</button><button id="resetLayout">Reset edits</button></div></details>
+    <div class="sidebar-foot">LIVE FROM MINECRAFT TRANSIT RAILWAY<br><span>North ↑ · Schematic distances</span></div>
   </aside>
-
   <main class="map-shell">
-    <div class="map-toolbar">
-      <button id="zoomIn">+</button><button id="zoomOut">−</button><button id="fitMap">Fit</button>
-    </div>
-    <div id="emptyState" class="empty-state" hidden><h2>Map could not load</h2><p>Start the local server with <code>npm start</code>, then open <code>http://127.0.0.1:5173</code>.</p></div>
-    <svg id="map" aria-label="Folityn transit schematic">
-      <g id="viewport">
-        <g id="corridorsLayer"></g>
-        <g id="routesLayer"></g>
-        <g id="stationsLayer"></g>
-        <g id="labelsLayer"></g>
-      </g>
-    </svg>
+    <div class="map-toolbar"><button id="menu" aria-label="Toggle sidebar">☰</button><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button><button id="fitCity">City</button><button id="fitMap">Full network</button></div>
+    <div class="map-heading"><span>FOLITYN</span><small>LIVE TRANSIT ATLAS</small></div>
+    <div id="emptyState" class="empty-state" hidden><span class="empty-icon">↗</span><h2>Connect your live network</h2><p id="emptyDetail">Keep Minecraft/MTR running at 127.0.0.1:8888. Start this map with npm start, then open the local map.</p><a href="http://127.0.0.1:5173">Open local live map ↗</a><button id="retry">Try again</button></div>
+    <svg id="map" aria-label="Live Folityn transit schematic"><g id="viewport"><g id="corridorsLayer"></g><g id="routesLayer"></g><g id="stationsLayer"></g><g id="labelsLayer"></g></g></svg>
     <div id="stationPopup" class="station-popup" hidden></div>
+    <div class="map-legend"><span class="legend-line"></span> Fixed 45° infrastructure <span class="legend-loop">↻</span> One-way Rynek</div>
+    <div class="north">N<span>↑</span></div>
   </main>
-</div>
-<script src="app.js"></script>
-<script src="core-fix.js"></script>
-<script src="path-station-fix.js"></script>
-<script src="render-cleanup.js"></script>
-</body>
-</html>
+</div><script src="map-model.js"></script><script src="app.js"></script>
+</body></html>
