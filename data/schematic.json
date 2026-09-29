@@ -1,106 +1,905 @@
 {
-  "version": 1,
-  "background": "#0b1220",
+  "version": 3,
   "aliases": {
-    "Aleje Osamasona": "RYNEK",
-    "Stare Miasto": "RYNEK",
-    "Muzeum Narodowa": "RYNEK",
-    "Królewska": "RYNEK",
-    "Krolewska": "RYNEK",
-    "Folityn Wity": "Wity",
-    "Wity PKM": "Wity"
+    "Folityn Wity": "Wity PKM",
+    "Rondo Ramexi": "Rondo Rameksi"
   },
-  "hubs": {
-    "RYNEK": {"x": 690, "y": 700, "kind": "major", "label": "RYNEK"},
-    "Folityn Centralny": {"x": 760, "y": 500, "kind": "central", "label": "Folityn Centralny"},
-    "Wity": {"x": 360, "y": 1060, "kind": "interchange", "label": "Wity"},
-    "Rogowska Centrum Miejskie": {"x": 920, "y": 700, "kind": "interchange", "label": "Rogowska Centrum Miejskie"}
-  },
-  "nodes": {
-    "Wiadukt Torowy": [760, 610],
-    "Rondo Larcho": [790, 820],
-    "Katedra": [760, 760],
-    "Teatr Miejski": [650, 500],
-    "WOS Boisko": [430, 500],
-    "Rondo Rameksi": [260, 500],
-
-    "Maniaka": [1060, 700],
-    "Rondo Moryta-Niejawskiego": [1210, 700],
-    "Grochowa": [1390, 700],
-    "Strzeleckiego": [1540, 700],
-    "Szwedzka Stadion": [1690, 700],
-    "Rondo Nettspenda": [1830, 700],
-    "Budziszewska": [1970, 700],
-    "Cmentarzowa": [2110, 700],
-
-    "Folityn Jamnikowsko": [1510, 500],
-    "Jamnikowsko": [1650, 500],
-    "Jamnikowsko PKM": [1770, 500],
-    "Folityn Polany": [1880, 500],
-    "Szczecinki": [2000, 500],
-
-    "Witkowskiego": [1040, 820],
-    "Rogowska/Dąbka": [1160, 940],
-    "Rogowska": [1280, 1060],
-    "Charlińska": [1400, 1180],
-    "Soperka": [1520, 1300],
-    "Szwedzka/Norweska": [1640, 1420],
-    "Europejska": [1760, 1540],
-
-    "Wzgórzyn PKM": [1500, 470],
-    "Rakoniewicka": [1600, 370],
-    "Astrolitowska": [1700, 270],
-    "Końcowa": [1800, 170],
-    "Kraszewska": [1900, 70],
-    "Lepianki": [2000, -30],
-    "Kobylskiego": [2100, -130],
-
-    "Most Śródmiejski": [900, 930],
-    "Sucharskiego": [1010, 1040],
-    "Rynek Chomicki": [1120, 1150],
-    "Polna": [1230, 1260],
-    "Rodowa": [1340, 1370],
-    "Muzea": [1450, 1480],
-
-    "Folityn Drzewiec": [760, 350],
-    "Drzewiec PKM": [760, 200],
-    "Rynek Wielowicki": [760, 110],
-    "Węzeł 7 Września Hrabska": [760, 20],
-    "Fabryczna": [760, -70],
-    "Słonecznikowa": [850, -160],
-    "Wypycha": [940, -250],
-    "Brzozowo": [1030, -340],
-    "Folityn Lipków": [1120, -430],
-
-    "Folityn Zachód": [180, 1060],
-    "Brama Południowa": [500, 920],
-    "Cukrowa": [600, 820],
-    "Staniechowska": [570, 1210],
-    "Folityn Airport West": [770, 1210],
-    "Rondo Niepodległości": [330, 1340],
-    "Os. Wirenka": [450, 1340],
-
-    "Lipków/Obornicka": [1210, -520],
-    "Lipków/A1": [1300, -610],
-    "Lipków/Os.Lipowe": [1390, -700],
-    "Lipków/Ujście CH": [1390, -800],
-    "Lipków/Zajączewo": [1390, -900],
-    "Lipków Wschód": [1690, -610],
-    "Ostrówka": [1840, -460]
+  "positions": {
+    "Folityn Centralny": [
+      0,
+      0
+    ],
+    "Wiadukt Torowy": [
+      0,
+      140
+    ],
+    "@rogowska-junction": [
+      0,
+      240
+    ],
+    "Rondo Larcho": [
+      0,
+      390
+    ],
+    "Most Śródmiejski": [
+      0,
+      700
+    ],
+    "Teatr Miejski": [
+      -140,
+      0
+    ],
+    "Wielowicka": [
+      -280,
+      0
+    ],
+    "Międzymiejska": [
+      -420,
+      0
+    ],
+    "WOS": [
+      -560,
+      0
+    ],
+    "Brama Zachodnia": [
+      -700,
+      0
+    ],
+    "Rondo Rameksi": [
+      -840,
+      0
+    ],
+    "Dworzec Wschodni": [
+      140,
+      -120
+    ],
+    "Plac Lestera": [
+      240,
+      -220
+    ],
+    "Rynek Litowski": [
+      340,
+      -320
+    ],
+    "Gorzowska/Hrabska": [
+      440,
+      -420
+    ],
+    "Albrechta": [
+      540,
+      -520
+    ],
+    "Wiejska": [
+      640,
+      -620
+    ],
+    "Wzgórzyn PKM": [
+      740,
+      -720
+    ],
+    "Astrolitowska": [
+      840,
+      -820
+    ],
+    "Końcowa": [
+      940,
+      -920
+    ],
+    "Kraszewska": [
+      1040,
+      -1020
+    ],
+    "Lepianki": [
+      1140,
+      -1120
+    ],
+    "Kobylskiego": [
+      1240,
+      -1220
+    ],
+    "Myszowo": [
+      1340,
+      -1320
+    ],
+    "Wojciechowskiej": [
+      1440,
+      -1420
+    ],
+    "Solarna CH": [
+      1540,
+      -1520
+    ],
+    "Wity PKM": [
+      -760,
+      480
+    ],
+    "Wity Dolne": [
+      -680,
+      360
+    ],
+    "Wilhelma": [
+      -640,
+      300
+    ],
+    "Mostowa": [
+      -600,
+      240
+    ],
+    "WOS Boisko": [
+      -540,
+      -110
+    ],
+    "Korzeniewskiego": [
+      -520,
+      -230
+    ],
+    "Wielowice Mniejsze Korytarz": [
+      -500,
+      -350
+    ],
+    "FLN Bank": [
+      -480,
+      -470
+    ],
+    "Folityn Drzewnia": [
+      1500,
+      -960
+    ],
+    "Austrowęgierska": [
+      1380,
+      -1080
+    ],
+    "Orzechowa": [
+      1260,
+      -1200
+    ],
+    "Os. Drzewnia": [
+      1140,
+      -1320
+    ],
+    "Lipków/Dworcowa": [
+      1020,
+      -1440
+    ],
+    "Lipków/Osieckiej": [
+      900,
+      -1560
+    ],
+    "Lipków/Puszczowska": [
+      780,
+      -1680
+    ],
+    "Lipków/Towarowy": [
+      660,
+      -1800
+    ],
+    "Lipków/Os. Leśne": [
+      540,
+      -1920
+    ],
+    "Kraszewo/Magazynowa": [
+      1640,
+      -1620
+    ],
+    "Kraszewo/Nowa": [
+      1740,
+      -1720
+    ],
+    "Rynek Wielowicki": [
+      -320,
+      -350
+    ],
+    "Styczniowa": [
+      -320,
+      -460
+    ],
+    "Węzeł 7 Września Hrabska": [
+      -320,
+      -570
+    ],
+    "OLP": [
+      -320,
+      -680
+    ],
+    "Torowa": [
+      -320,
+      -790
+    ],
+    "Fabryczna": [
+      -320,
+      -900
+    ],
+    "Drzewiec PKM": [
+      -320,
+      -1010
+    ],
+    "Rogowska Centrum Miejskie": [
+      120,
+      240
+    ],
+    "Witkowskiego": [
+      240,
+      360
+    ],
+    "Rogowska/Dąbka": [
+      360,
+      480
+    ],
+    "Rogowska": [
+      480,
+      600
+    ],
+    "Szpitalna": [
+      600,
+      720
+    ],
+    "Szwedzka/Norweska": [
+      720,
+      840
+    ],
+    "Rynek Chomicki": [
+      120,
+      820
+    ],
+    "Polna": [
+      240,
+      940
+    ],
+    "Rodowa": [
+      360,
+      1060
+    ],
+    "Muzea": [
+      480,
+      1180
+    ],
+    "Sucharskiego": [
+      120,
+      580
+    ],
+    "Maniaka": [
+      260,
+      240
+    ],
+    "Rondo Moryta-Niejawskiego": [
+      400,
+      240
+    ],
+    "Grochowa": [
+      520,
+      120
+    ],
+    "Strzeleckiego": [
+      640,
+      0
+    ],
+    "Szwedzka Stadion": [
+      760,
+      -120
+    ],
+    "Rondo Nettspenda": [
+      880,
+      -240
+    ],
+    "Budziszewska": [
+      1000,
+      -360
+    ],
+    "Cmentarzowa": [
+      1120,
+      -480
+    ],
+    "Jamnikowsko": [
+      1240,
+      -600
+    ],
+    "Jamnikowsko PKM": [
+      1360,
+      -720
+    ],
+    "Polany/Kurza": [
+      1480,
+      -840
+    ],
+    "Polany/Północna": [
+      1600,
+      -960
+    ],
+    "Polany/Ukryta": [
+      1720,
+      -1080
+    ],
+    "Polany/Rynek": [
+      1840,
+      -1200
+    ],
+    "Polany/Straż Pożarna": [
+      1960,
+      -1320
+    ],
+    "Polany/Kolejowa": [
+      2080,
+      -1440
+    ],
+    "Stare Miasto": [
+      -360,
+      240
+    ],
+    "Aleje Osamasona": [
+      -480,
+      360
+    ],
+    "Muzeum Narodowa": [
+      -360,
+      480
+    ],
+    "Królewska": [
+      -240,
+      360
+    ],
+    "Katedra": [
+      -120,
+      360
+    ],
+    "Chopina": [
+      -240,
+      580
+    ],
+    "Centralny Teatralny": [
+      -140,
+      120
+    ],
+    "Uniwersytet Tadeusza Chachinga": [
+      -140,
+      240
+    ],
+    "Rakoniewicka": [
+      600,
+      -860
+    ],
+    "Rakoniewicka II": [
+      470,
+      -990
+    ],
+    "Mangowa": [
+      590,
+      -1110
+    ],
+    "Brzozowska": [
+      710,
+      -1230
+    ],
+    "Lipowa": [
+      830,
+      -1350
+    ],
+    "Przejazd": [
+      340,
+      -1010
+    ],
+    "Wzgórzysta": [
+      10,
+      -1010
+    ],
+    "Laskowskiego Wiadukt": [
+      1360,
+      -1220
+    ],
+    "Zmierzch": [
+      700,
+      1180
+    ],
+    "Chwastowa": [
+      640,
+      1080
+    ],
+    "Polany/Wzgórza": [
+      1600,
+      -840
+    ],
+    "Polany/Północna II": [
+      1600,
+      -700
+    ],
+    "Laskowskiego": [
+      1460,
+      -1080
+    ],
+    "Krakowska": [
+      -600,
+      240
+    ],
+    "Krakowska(Plac)": [
+      -520,
+      120
+    ],
+    "Plac 31 Lipca": [
+      -600,
+      180
+    ],
+    "Plac Ludowy": [
+      -360,
+      520
+    ],
+    "Plac Cukrowy": [
+      -500,
+      400
+    ],
+    "Łucznicza": [
+      -540,
+      60
+    ],
+    "Kwitnącej Wiśni": [
+      -370,
+      -175
+    ],
+    "Desperaka": [
+      -300,
+      -175
+    ],
+    "Stalowa": [
+      -160,
+      1120
+    ],
+    "Rondo Niepodległości": [
+      -140,
+      1060
+    ],
+    "Przełęczyna": [
+      -120,
+      1000
+    ],
+    "Miodowa": [
+      -100,
+      940
+    ],
+    "Pszenna": [
+      -80,
+      880
+    ],
+    "Powstańców Folityna": [
+      -60,
+      820
+    ],
+    "Wielkopolska": [
+      -40,
+      770
+    ],
+    "Folityńska": [
+      -20,
+      730
+    ],
+    "Most Św. Antoniego II": [
+      -600,
+      120
+    ],
+    "Most Św. Antoniego": [
+      -720,
+      120
+    ],
+    "Nowe Miasto I": [
+      -720,
+      0
+    ],
+    "Kurzowa": [
+      1580,
+      -1080
+    ],
+    "Trzebawska": [
+      1700,
+      -1080
+    ],
+    "Solarna": [
+      1820,
+      -1200
+    ],
+    "Solarna II": [
+      1820,
+      -1320
+    ],
+    "Solarna III": [
+      1820,
+      -1440
+    ],
+    "Owczarek": [
+      1700,
+      -1520
+    ],
+    "Stawy": [
+      1080,
+      -960
+    ],
+    "Śramowo": [
+      1200,
+      -1000
+    ],
+    "Kanadyjska": [
+      1320,
+      -1040
+    ],
+    "Polany/Szkolna": [
+      2020,
+      -1500
+    ],
+    "Polany/Szkoła nr.1": [
+      2050,
+      -1470
+    ],
+    "Polany/Wschodnia": [
+      1670,
+      -960
+    ],
+    "Poranna": [
+      1620,
+      -840
+    ],
+    "@603-north-a": [
+      80,
+      -520
+    ],
+    "@603-north-b": [
+      600,
+      -680
+    ],
+    "@603-north-c": [
+      1120,
+      -760
+    ],
+    "Kraszewo/Kubickiej": [
+      1950,
+      -1630
+    ],
+    "Kraszewo/Racinowskiej": [
+      1900,
+      -1680
+    ],
+    "Kraszewo/Sobel": [
+      1850,
+      -1730
+    ],
+    "Kraszewo/Kościół": [
+      1800,
+      -1780
+    ]
   },
   "corridors": [
-    {"id":"core-east","stations":["Rogowska Centrum Miejskie","Maniaka","Rondo Moryta-Niejawskiego","Grochowa","Strzeleckiego","Szwedzka Stadion","Rondo Nettspenda","Budziszewska","Cmentarzowa"]},
-    {"id":"jamnikowsko","stations":["Rogowska Centrum Miejskie","Folityn Jamnikowsko","Jamnikowsko","Jamnikowsko PKM","Folityn Polany","Szczecinki"]},
-    {"id":"rogowska","stations":["Rogowska Centrum Miejskie","Witkowskiego","Rogowska/Dąbka","Rogowska","Charlińska","Soperka","Szwedzka/Norweska","Europejska"]},
-    {"id":"wzgorzyn","stations":["Wzgórzyn PKM","Rakoniewicka","Astrolitowska","Końcowa","Kraszewska","Lepianki","Kobylskiego"]},
-    {"id":"muzea","stations":["Rondo Larcho","Most Śródmiejski","Sucharskiego","Rynek Chomicki","Polna","Rodowa","Muzea"]},
-    {"id":"drzewiec","stations":["Folityn Centralny","Folityn Drzewiec","Drzewiec PKM","Rynek Wielowicki","Węzeł 7 Września Hrabska","Fabryczna","Słonecznikowa","Wypycha","Brzozowo","Folityn Lipków"]},
-    {"id":"central-core","stations":["Folityn Centralny","Wiadukt Torowy","Rogowska Centrum Miejskie","Rondo Larcho","Katedra","RYNEK","Teatr Miejski","WOS Boisko","Rondo Rameksi"]},
-    {"id":"wity","stations":["Folityn Centralny","Wity","Folityn Zachód"]},
-    {"id":"wity-south","stations":["Wity","Brama Południowa","Cukrowa","Rondo Larcho"]},
-    {"id":"airport","stations":["Wity","Staniechowska","Folityn Airport West"]},
-    {"id":"south","stations":["Wity","Rondo Niepodległości","Os. Wirenka"]},
-    {"id":"lipkow","stations":["Folityn Lipków","Lipków/Obornicka","Lipków/A1","Lipków/Os.Lipowe","Lipków/Ujście CH","Lipków/Zajączewo"]},
-    {"id":"lipkow-east","stations":["Folityn Lipków","Lipków Wschód","Ostrówka"]}
-  ]
+    {
+      "id": "central",
+      "label": "Centralny · Śródmiejski",
+      "stations": [
+        "Folityn Centralny",
+        "Wiadukt Torowy",
+        "@rogowska-junction",
+        "Rondo Larcho",
+        "Most Śródmiejski"
+      ]
+    },
+    {
+      "id": "theatre",
+      "label": "Teatr · Rameksi",
+      "stations": [
+        "Folityn Centralny",
+        "Teatr Miejski",
+        "Wielowicka",
+        "Międzymiejska",
+        "WOS",
+        "Brama Zachodnia",
+        "Rondo Rameksi"
+      ]
+    },
+    {
+      "id": "east",
+      "label": "Dworzec Wschodni · Kraszewo/Nowa",
+      "stations": [
+        "Dworzec Wschodni",
+        "Plac Lestera",
+        "Rynek Litowski",
+        "Gorzowska/Hrabska",
+        "Albrechta",
+        "Wiejska",
+        "Wzgórzyn PKM",
+        "Astrolitowska",
+        "Końcowa",
+        "Kraszewska",
+        "Lepianki",
+        "Kobylskiego",
+        "Myszowo",
+        "Wojciechowskiej",
+        "Solarna CH",
+        "Kraszewo/Magazynowa",
+        "Kraszewo/Nowa"
+      ]
+    },
+    {
+      "id": "drzewiec",
+      "label": "Rynek Wielowicki · Drzewiec PKM",
+      "stations": [
+        "Rynek Wielowicki",
+        "Styczniowa",
+        "Węzeł 7 Września Hrabska",
+        "OLP",
+        "Torowa",
+        "Fabryczna",
+        "Drzewiec PKM"
+      ]
+    },
+    {
+      "id": "rogowska",
+      "label": "Rogowska · Szwedzka/Norweska",
+      "stations": [
+        "Rogowska Centrum Miejskie",
+        "Witkowskiego",
+        "Rogowska/Dąbka",
+        "Rogowska",
+        "Szpitalna",
+        "Szwedzka/Norweska"
+      ]
+    },
+    {
+      "id": "rogowska-entry",
+      "label": "Rogowska junction",
+      "stations": [
+        "@rogowska-junction",
+        "Rogowska Centrum Miejskie"
+      ]
+    },
+    {
+      "id": "muzea",
+      "label": "Śródmiejski · Muzea",
+      "stations": [
+        "Most Śródmiejski",
+        "Rynek Chomicki",
+        "Polna",
+        "Rodowa",
+        "Muzea"
+      ]
+    },
+    {
+      "id": "sucharskiego",
+      "label": "Larcho · Sucharskiego",
+      "stations": [
+        "Rondo Larcho",
+        "Sucharskiego",
+        "Rynek Chomicki"
+      ]
+    },
+    {
+      "id": "jamnikowsko",
+      "label": "Rogowska CM · Rondo · Polany/Kolejowa",
+      "stations": [
+        "Rogowska Centrum Miejskie",
+        "Maniaka",
+        "Rondo Moryta-Niejawskiego",
+        "Grochowa",
+        "Strzeleckiego",
+        "Szwedzka Stadion",
+        "Rondo Nettspenda",
+        "Budziszewska",
+        "Cmentarzowa",
+        "Jamnikowsko",
+        "Jamnikowsko PKM",
+        "Polany/Kurza",
+        "Polany/Północna",
+        "Polany/Ukryta",
+        "Polany/Rynek",
+        "Polany/Straż Pożarna",
+        "Polany/Kolejowa"
+      ]
+    },
+    {
+      "id": "rynek",
+      "label": "Rynek",
+      "loop": true,
+      "oneWay": true,
+      "stations": [
+        "Stare Miasto",
+        "Aleje Osamasona",
+        "Muzeum Narodowa",
+        "Królewska"
+      ]
+    },
+    {
+      "id": "katedra",
+      "label": "Katedra · Larcho",
+      "stations": [
+        "Królewska",
+        "Katedra",
+        "Rondo Larcho"
+      ]
+    },
+    {
+      "id": "teatralny",
+      "label": "Teatralny",
+      "stations": [
+        "Teatr Miejski",
+        "Centralny Teatralny",
+        "Uniwersytet Tadeusza Chachinga",
+        "Katedra"
+      ]
+    },
+    {
+      "id": "chopina",
+      "label": "Chopina",
+      "stations": [
+        "Królewska",
+        "Chopina",
+        "Most Śródmiejski"
+      ]
+    },
+    {
+      "id": "line180-main",
+      "label": "180 · Wzgórzyn · Solarna",
+      "stations": [
+        "Wzgórzyn PKM",
+        "Astrolitowska",
+        "Końcowa",
+        "Stawy",
+        "Śramowo",
+        "Kanadyjska",
+        "Laskowskiego",
+        "Kurzowa",
+        "Trzebawska",
+        "Solarna",
+        "Solarna II",
+        "Solarna III",
+        "Owczarek",
+        "Solarna CH"
+      ]
+    },
+    {
+      "id": "line180-return",
+      "label": "180 · Laskowskiego Wiadukt",
+      "stations": [
+        "Solarna CH",
+        "Owczarek",
+        "Solarna III",
+        "Solarna II",
+        "Solarna",
+        "Trzebawska",
+        "Kurzowa",
+        "Laskowskiego",
+        "Laskowskiego Wiadukt",
+        "Kobylskiego",
+        "Lepianki",
+        "Kraszewska",
+        "Końcowa",
+        "Astrolitowska",
+        "Wzgórzyn PKM"
+      ]
+    },
+    {
+      "id": "line603",
+      "label": "603 · Wity · Lipków",
+      "stations": [
+        "Wity PKM",
+        "Wity Dolne",
+        "Wilhelma",
+        "Mostowa",
+        "Plac 31 Lipca",
+        "WOS",
+        "WOS Boisko",
+        "Korzeniewskiego",
+        "Wielowice Mniejsze Korytarz",
+        "FLN Bank",
+        "@603-north-a",
+        "@603-north-b",
+        "@603-north-c",
+        "Poranna",
+        "Folityn Drzewnia",
+        "Austrowęgierska",
+        "Orzechowa",
+        "Os. Drzewnia",
+        "Lipków/Dworcowa",
+        "Lipków/Osieckiej",
+        "Lipków/Puszczowska",
+        "Lipków/Towarowy",
+        "Lipków/Os. Leśne"
+      ]
+    },
+    {
+      "id": "triangle-miedzymiejska",
+      "label": "Międzymiejska · Wiśni · Rynek Wielowicki",
+      "stations": [
+        "Międzymiejska",
+        "Kwitnącej Wiśni",
+        "Rynek Wielowicki"
+      ]
+    },
+    {
+      "id": "triangle-wielowicka",
+      "label": "Wielowicka · Desperaka · Rynek Wielowicki",
+      "stations": [
+        "Wielowicka",
+        "Desperaka",
+        "Rynek Wielowicki"
+      ]
+    },
+    {
+      "id": "folitynska-stalowa",
+      "label": "Folityńska · Stalowa",
+      "stations": [
+        "Most Śródmiejski",
+        "Folityńska",
+        "Wielkopolska",
+        "Powstańców Folityna",
+        "Pszenna",
+        "Miodowa",
+        "Przełęczyna",
+        "Rondo Niepodległości",
+        "Stalowa"
+      ]
+    },
+    {
+      "id": "rakoniewicka",
+      "label": "Wzgórzyn · Rakoniewicka II",
+      "stations": [
+        "Wzgórzyn PKM",
+        "Rakoniewicka",
+        "Rakoniewicka II"
+      ]
+    },
+    {
+      "id": "rakoniewicka-branch",
+      "label": "Rakoniewicka II · Lipowa",
+      "stations": [
+        "Rakoniewicka II",
+        "Mangowa",
+        "Brzozowska",
+        "Lipowa"
+      ]
+    },
+    {
+      "id": "drzewiec-wzgorzyn",
+      "label": "Drzewiec · Wzgórzyn",
+      "stations": [
+        "Drzewiec PKM",
+        "Wzgórzysta",
+        "Przejazd",
+        "Rakoniewicka",
+        "Wzgórzyn PKM"
+      ]
+    },
+    {
+      "id": "antoniego-l",
+      "label": "Most Św. Antoniego · Nowe Miasto I",
+      "stations": [
+        "Most Św. Antoniego II",
+        "Most Św. Antoniego",
+        "Nowe Miasto I",
+        "Rondo Rameksi"
+      ]
+    },
+    {
+      "id": "polany-710",
+      "label": "710 · Polany · Wzgórzyn",
+      "stations": [
+        "Kraszewo/Kościół",
+        "Kraszewo/Sobel",
+        "Kraszewo/Racinowskiej",
+        "Kraszewo/Kubickiej",
+        "Polany/Szkolna",
+        "Polany/Szkoła nr.1",
+        "Polany/Kolejowa",
+        "Polany/Straż Pożarna",
+        "Polany/Rynek",
+        "Polany/Ukryta",
+        "Polany/Wschodnia",
+        "Polany/Wzgórza",
+        "Poranna",
+        "Trzebawska",
+        "Solarna",
+        "Solarna II",
+        "Solarna III",
+        "Owczarek",
+        "Solarna CH",
+        "Konopnickiej",
+        "Laskowskiego Wiadukt",
+        "Końcowa",
+        "Astrolitowska",
+        "Wzgórzyn PKM"
+      ]
+    }
+  ],
+  "geographicScale": 0.35
 }
+
