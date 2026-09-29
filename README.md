@@ -32,9 +32,9 @@ The bridge binds only to loopback. GitHub Pages cannot run Node or reach another
 - **Western cross street:** Teatr Miejski to Rondo Rameksi, perpendicular to the central spine.
 - **Rogowska:** Rogowska Centrum Miejskie to Szwedzka/Norweska, southeast at 45°, mirrored against Wzgórzyn. Rogowska Centrum Miejskie joins the central spine through one shared junction.
 - **Muzea:** Most Śródmiejski to Muzea, a lower parallel southeast diagonal. The separate Larcho/Sucharskiego branch joins at Rynek Chomicki.
-- **Jamnikowsko:** the eastern branch enters Witkowskiego, then Rogowska Centrum Miejskie, before reaching the central spine.
+- **Jamnikowsko:** a straight east–west corridor into Rogowska Centrum Miejskie, then the central spine. Witkowskiego stays on the separate southeast Rogowska branch.
 
-All rendering uses straight segments at 0°, 45° or 90°, never Bezier curves. Surrounding stops follow a similarity transform of their nearest corridor: rotation, translation and schematic scaling. Direction variants share physical edges, while station service lists come only from actual MTR stops (passing through a station does not invent a stop). The public numeric route name takes precedence over MTR's directional `number` field.
+All rendering uses straight segments at 0°, 45° or 90°, never Bezier curves. Surrounding stops use a connected graph layout. A weighted displacement field moves adjacent stops together between fixed anchors, instead of assigning unrelated nearest-segment rotations and scales. Rakoniewicka–Rakoniewicka II continues northwest from Wzgórzyn, with its adjoining branch anchored to preserve direction. Direction variants share physical edges, while station service lists come only from actual MTR stops (passing through a station does not invent a stop). The public numeric route name takes precedence over MTR's directional `number` field.
 
 Unknown/new stops appear from live coordinates. The named corridor anchors remain fixed; add newly commissioned infrastructure anchors to the schematic configuration when they need an explicit corridor lock. This updates layout rules, not network snapshots.
 

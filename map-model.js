@@ -75,32 +75,53 @@
       const c={...spec,keys}; corridors.push(c);
       for(const k of keys) nodes.get(k).locks.add(c.id);
     }
-    // Rotate surrounding geography with its nearest physical corridor segment.
-    // Explicit anchors never move when MTR adds/removes routes.
-    const segments=[];
-    for(const c of corridors.filter(c=>!c.loop)) for(let i=1;i<c.keys.length;i++) {
-      const a=nodes.get(c.keys[i-1]),b=nodes.get(c.keys[i]);
-      if(a.raw&&b.raw&&distance(a.raw,b.raw)>10) segments.push({a,b});
-    }
-    for(const n of nodes.values()) {
-      if(n.fixed) continue;
-      let closest=null;
-      for(const {a,b} of segments) {
-        const dx=b.raw.x-a.raw.x,dy=b.raw.y-a.raw.y,l2=dx*dx+dy*dy;
-        const t=((n.raw.x-a.raw.x)*dx+(n.raw.y-a.raw.y)*dy)/l2;
-        const clamp=Math.max(0,Math.min(1,t));
-        const d=Math.hypot(n.raw.x-a.raw.x-clamp*dx,n.raw.y-a.raw.y-clamp*dy);
-        if(!closest||d<closest.d) closest={a,b,t,d,dx,dy,l2};
+    // Solve one connected displacement field instead of choosing a different
+    // rotation/scale for every stop. Adjacent stops now move together even at
+    // corridor boundaries; short raw segments cannot magnify distant branches.
+    const adjacency=new Map([...nodes.keys()].map(k=>[k,new Map()]));
+    for(const r of data.routes) {
+      if(r.hidden)continue;
+      const seq=stops(r).map(nameOf).filter(k=>nodes.has(k));
+      for(let i=1;i<seq.length;i++) {
+        const a=nodes.get(seq[i-1]),b=nodes.get(seq[i]);
+        if(a===b||!a.raw||!b.raw)continue;
+        const weight=1/Math.max(60,distance(a.raw,b.raw));
+        adjacency.get(a.key).set(b.key,weight);
+        adjacency.get(b.key).set(a.key,weight);
       }
-      if(closest) {
-        const {a,b,t,dx,dy,l2}=closest;
-        const v=((n.raw.y-a.raw.y)*dx-(n.raw.x-a.raw.x)*dy)/l2;
-        // Similarity transform: the same rotation as the corridor, including its neighbors.
-        n.x=a.x+t*(b.x-a.x)-v*(b.y-a.y);
-        n.y=a.y+t*(b.y-a.y)+v*(b.x-a.x);
-      } else {n.x=n.raw.x*.3;n.y=n.raw.y*.3;}
+    }
+    const reference=nodes.get(resolve('Folityn Centralny'))?.raw??{x:0,y:0};
+    const scale=config.geographicScale??.35;
+    const displacement=new Map();
+    for(const n of nodes.values()) {
+      if(!n.raw)continue;
+      n.base={x:(n.raw.x-reference.x)*scale,y:(n.raw.y-reference.y)*scale};
       const edit=edits[n.key];
-      if(Number.isFinite(edit?.x)&&Number.isFinite(edit?.y)) {n.x=edit.x;n.y=edit.y;}
+      if(!n.fixed&&Number.isFinite(edit?.x)&&Number.isFinite(edit?.y)) {
+        n.x=edit.x;n.y=edit.y;n.edited=true;
+      }
+      displacement.set(n.key,n.fixed||n.edited?{x:n.x-n.base.x,y:n.y-n.base.y}:{x:0,y:0});
+    }
+    // Deterministic Gauss-Seidel relaxation of the weighted graph Laplacian.
+    // Anchors and saved edits are boundary conditions, not competing suggestions.
+    const free=[...nodes.values()].filter(n=>n.raw&&!n.fixed&&!n.edited).sort((a,b)=>a.key.localeCompare(b.key));
+    for(let iteration=0;iteration<1500;iteration++) {
+      let movement=0;
+      for(const n of free) {
+        let x=0,y=0,total=0;
+        for(const [key,w] of adjacency.get(n.key)) {
+          const d=displacement.get(key);if(!d)continue;
+          x+=d.x*w;y+=d.y*w;total+=w;
+        }
+        if(!total)continue;
+        const old=displacement.get(n.key),next={x:x/total,y:y/total};
+        movement=Math.max(movement,Math.hypot(next.x-old.x,next.y-old.y));
+        displacement.set(n.key,next);
+      }
+      if(movement<.0001)break;
+    }
+    for(const n of free) {
+      const d=displacement.get(n.key);n.x=n.base.x+d.x;n.y=n.base.y+d.y;
     }
     const servicesByKey=new Map();
     for(const r of data.routes) {

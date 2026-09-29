@@ -43,7 +43,7 @@ function buildControls(){
     const label=document.createElement('span');label.textContent=s.label;row.title=s.class+' · '+s.servedStops.size+' stops';row.append(input,sw,label);$('#routeList').append(row);
   }
   $('#corridorList').replaceChildren();
-  for(const c of state.model.corridors.filter(c=>['central','theatre','east','drzewiec','rogowska','muzea','jamnikowsko','rynek'].includes(c.id))){const b=document.createElement('button');b.textContent=c.label;b.onclick=()=>fitNodes(c.keys.map(k=>state.model.nodes.get(k)));$('#corridorList').append(b);}
+  for(const c of state.model.corridors.filter(c=>['central','theatre','east','drzewiec','rogowska','muzea','jamnikowsko','rakoniewicka','rynek'].includes(c.id))){const b=document.createElement('button');b.textContent=c.label;b.onclick=()=>fitNodes(c.keys.map(k=>state.model.nodes.get(k)));$('#corridorList').append(b);}
 }
 function pointsText(points){return points.map(p=>p.x+','+p.y).join(' ');}
 function offsetPoints(points,off){
