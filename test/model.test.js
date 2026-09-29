@@ -23,8 +23,12 @@ test('182 direction numbers stay grouped as one bus service; rail names are pres
 test('skipped stops share infrastructure without inventing a served stop',()=>{
  const d=fixture();const ns=['Folityn Centralny','Most Śródmiejski'];d.routes=[{name:'10',type:'train_light_rail',stations:ns.map(n=>({id:String(names.indexOf(n)),x:config.positions[n][0],z:config.positions[n][1]}))},...d.routes.map(r=>({...r,name:'99'}))];const m=model.build(d,config),s=m.services.find(s=>s.label==='10');assert.equal(s.servedStops.size,2);assert.ok([...m.edges.values()].some(e=>e.services.has(s.key)&&(e.a==='Wiadukt Torowy'||e.b==='Wiadukt Torowy')));
 });
-test('Jamnikowsko joins Rogowska on one straight line without a Witkowskiego detour',()=>{
- const d=fixture(),r={name:'20',type:'train_light_rail',stations:['Jamnikowsko','Rogowska Centrum Miejskie','Wiadukt Torowy'].map(n=>({id:String(names.indexOf(n)),x:config.positions[n][0],z:config.positions[n][1]}))};d.routes.push(r);const m=model.build(d,config);straight(m,'jamnikowsko','h');
+test('Jamnikowsko runs straight to Rondo, then 45 degrees up to Polany',()=>{
+ const chain=['Rogowska Centrum Miejskie','Maniaka','Rondo Moryta-Niejawskiego','Grochowa','Strzeleckiego','Szwedzka Stadion','Rondo Nettspenda','Budziszewska','Cmentarzowa','Jamnikowsko','Jamnikowsko PKM','Polany/Kurza','Polany/Północna','Polany/Ukryta','Polany/Rynek','Polany/Straż Pożarna','Polany/Kolejowa'];
+ const d=fixture(),r={name:'20',type:'train_light_rail',stations:chain.map(n=>({id:String(names.indexOf(n)),x:config.positions[n][0],z:config.positions[n][1]}))};d.routes.push(r);const m=model.build(d,config);
+ const ns=chain.map(n=>m.nodes.get(n));
+ for(let i=1;i<3;i++)approx(ns[i].y,ns[0].y);
+ for(let i=3;i<ns.length;i++){assert.ok(ns[i].y<ns[i-1].y);approx(Math.abs(ns[i].y-ns[i-1].y),Math.abs(ns[i].x-ns[i-1].x));}
  const edges=[...m.edges.values()].filter(e=>e.services.has('tram:20'));
  assert.ok(edges.some(e=>new Set([e.a,e.b]).has('Maniaka')&&new Set([e.a,e.b]).has('Rogowska Centrum Miejskie')));
  assert.ok(!edges.some(e=>e.a==='Witkowskiego'||e.b==='Witkowskiego'));

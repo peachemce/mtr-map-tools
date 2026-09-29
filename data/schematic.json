@@ -198,32 +198,60 @@
       240
     ],
     "Grochowa": [
-      540,
-      240
+      520,
+      120
     ],
     "Strzeleckiego": [
-      680,
-      240
+      640,
+      0
     ],
     "Szwedzka Stadion": [
-      820,
-      240
+      760,
+      -120
     ],
     "Rondo Nettspenda": [
-      960,
-      240
+      880,
+      -240
     ],
     "Budziszewska": [
-      1100,
-      240
+      1000,
+      -360
     ],
     "Cmentarzowa": [
-      1240,
-      240
+      1120,
+      -480
     ],
     "Jamnikowsko": [
-      1380,
-      240
+      1240,
+      -600
+    ],
+    "Jamnikowsko PKM": [
+      1360,
+      -720
+    ],
+    "Polany/Kurza": [
+      1480,
+      -840
+    ],
+    "Polany/Północna": [
+      1600,
+      -960
+    ],
+    "Polany/Ukryta": [
+      1720,
+      -1080
+    ],
+    "Polany/Rynek": [
+      1840,
+      -1200
+    ],
+    "Polany/Straż Pożarna": [
+      1960,
+      -1320
+    ],
+    "Polany/Kolejowa": [
+      2080,
+      -1440
     ],
     "Stare Miasto": [
       -360,
@@ -445,7 +473,7 @@
     },
     {
       "id": "jamnikowsko",
-      "label": "Jamnikowsko · Rogowska Centrum Miejskie",
+      "label": "Rogowska CM · Rondo · Polany/Kolejowa",
       "stations": [
         "Rogowska Centrum Miejskie",
         "Maniaka",
@@ -456,7 +484,14 @@
         "Rondo Nettspenda",
         "Budziszewska",
         "Cmentarzowa",
-        "Jamnikowsko"
+        "Jamnikowsko",
+        "Jamnikowsko PKM",
+        "Polany/Kurza",
+        "Polany/Północna",
+        "Polany/Ukryta",
+        "Polany/Rynek",
+        "Polany/Straż Pożarna",
+        "Polany/Kolejowa"
       ]
     },
     {
