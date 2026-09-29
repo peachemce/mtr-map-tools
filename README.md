@@ -33,6 +33,10 @@ The bridge binds only to loopback. GitHub Pages cannot run Node or reach another
 - **Rogowska:** Rogowska Centrum Miejskie to Szwedzka/Norweska, southeast at 45°, mirrored against Wzgórzyn. Rogowska Centrum Miejskie joins the central spine through one shared junction.
 - **Muzea:** Most Śródmiejski to Muzea, a lower parallel southeast diagonal. The separate Larcho/Sucharskiego branch joins at Rynek Chomicki.
 - **Jamnikowsko / Polany:** Rogowska Centrum Miejskie → Maniaka → Rondo Moryta-Niejawskiego is straight east–west. From the Rondo, the corridor turns northeast at 45° through Grochowa, Szwedzka Stadion, Jamnikowsko, Jamnikowsko PKM and the Polany stops to Polany/Kolejowa. Witkowskiego stays on the separate southeast Rogowska branch.
+- **Line 180:** Wzgórzyn to Solarna uses a continuous intermediate band, with a separate Laskowskiego Wiadukt return branch so it does not jump across the Wzgórzyn/Jamnikowsko area.
+- **Polany 710:** The Polany/Kraszewo section is locked to its own continuation of the Jamnikowsko corridor. Lines 715 and 716 keep their live stop patterns while sharing the existing interchange anchors.
+- **Line 603:** Wity through WOS and Lipków follows a fixed northbound corridor with hidden bend anchors between the central and northern sections, keeping its long live route continuous.
+- **Secondary clean-up:** Międzymiejska–Kwitnącej Wiśni and Wielowicka–Desperaka form an even triangle into Rynek Wielowicki; Folityńska–Stalowa is a simple diagonal; and Most Św. Antoniego–Nowe Miasto I uses a right-angle L bend.
 
 All rendering uses straight segments at 0°, 45° or 90°, never Bezier curves. Surrounding stops use a connected graph layout. A weighted displacement field moves adjacent stops together between fixed anchors, instead of assigning unrelated nearest-segment rotations and scales. Rakoniewicka–Rakoniewicka II continues northwest from Wzgórzyn, with its adjoining branch anchored to preserve direction. Direction variants share physical edges, while station service lists come only from actual MTR stops (passing through a station does not invent a stop). The public numeric route name takes precedence over MTR's directional `number` field.
 
@@ -49,3 +53,4 @@ Main corridor stops are locked. **Adjust surrounding stops** lets you move other
 Run `npm test`. Tests cover required corridor relationships, one-way Rynek traversal, skip-stop routing, the Jamnikowsko junction, route grouping, edit persistence, changing live data, upstream failure/timeout, and the server's asset allowlist. GitHub Actions runs the same checks on pushes and pull requests.
 
 Core files: `map-model.js` (pure model and geometry), `app.js` (UI and polling), `server.js` (live bridge), `data/schematic.json` (layout). The former override scripts are not loaded.
+
