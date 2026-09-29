@@ -33,8 +33,25 @@ test('Jamnikowsko runs straight to Rondo, then 45 degrees up to Polany',()=>{
  assert.ok(edges.some(e=>new Set([e.a,e.b]).has('Maniaka')&&new Set([e.a,e.b]).has('Rogowska Centrum Miejskie')));
  assert.ok(!edges.some(e=>e.a==='Witkowskiego'||e.b==='Witkowskiego'));
 });
+test('line 180 stays in a smooth band between Wzgórzyn and Jamnikowsko',()=>{
+ const m=model.build(fixture(),config),c=m.corridors.find(c=>c.id==='line180-main');
+ assert.ok(c);const ns=c.keys.map(k=>m.nodes.get(k));
+ for(let i=1;i<7;i++){assert.ok(ns[i].x>ns[i-1].x);assert.ok(ns[i].y<ns[i-1].y);}
+ assert.equal(ns[6].label,'Laskowskiego');
+ assert.equal(ns[7].y,ns[6].y);assert.equal(ns[8].y,ns[7].y);
+});
+test('603 reaches farther north on its own fixed corridor',()=>{
+ const m=model.build(fixture(),config),c=m.corridors.find(c=>c.id==='line603');assert.ok(c);
+ const south=m.nodes.get('Wity PKM'),wos=m.nodes.get('WOS'),north=m.nodes.get('Lipków/Os. Leśne');
+ assert.ok(south.y>wos.y);assert.ok(north.y<-1500);assert.ok(north.y<m.nodes.get('Lipków/Dworcowa').y);
+});
+test('710 follows the Polany continuation into the fixed corridor',()=>{
+ const m=model.build(fixture(),config),c=m.corridors.find(c=>c.id==='polany-710');assert.ok(c);
+ for(const name of ['Polany/Szkolna','Polany/Kolejowa','Polany/Ukryta','Polany/Wzgórza','Trzebawska','Wzgórzyn PKM'])assert.ok(c.keys.includes(name));
+ const a=m.nodes.get('Polany/Kolejowa'),b=m.nodes.get('Polany/Straż Pożarna'),d=m.nodes.get('Polany/Rynek');assert.ok(a.x>b.x&&b.x>d.x);
+});
 test('Rynek has four distinct stops and traverses only the forward loop',()=>{
- const d=fixture();d.routes.push({name:'19',type:'train_light_rail',stations:['Królewska','Muzeum Narodowa'].map(n=>({id:String(names.indexOf(n)),x:config.positions[n][0],z:config.positions[n][1]}))});const m=model.build(d,config);const ring=m.corridors.find(c=>c.id==='rynek');assert.equal(ring.keys.length,4);const edges=[...m.edges.values()].filter(e=>e.services.has('tram:19'));assert.equal(edges.length,3);for(const e of edges){const from=[...e.directions.get('tram:19')][0]===1?e.a:e.b;const to=from===e.a?e.b:e.a;assert.equal(ring.keys[(ring.keys.indexOf(from)+1)%4],to);}
+ const d=fixture();d.routes.push({name:'RynekTest',type:'train_normal',stations:['Królewska','Muzeum Narodowa'].map(n=>({id:String(names.indexOf(n)),x:config.positions[n][0],z:config.positions[n][1]}))});const m=model.build(d,config);const ring=m.corridors.find(c=>c.id==='rynek');assert.equal(ring.keys.length,4);const edges=[...m.edges.values()].filter(e=>e.services.has('rail:rynektest'));assert.equal(edges.length,3);for(const e of edges){const from=[...e.directions.get('rail:rynektest')][0]===1?e.a:e.b;const to=from===e.a?e.b:e.a;assert.equal(ring.keys[(ring.keys.indexOf(from)+1)%4],to);}
 });
 test('saved edits survive rebuilds but cannot bend locked corridors',()=>{
  const d=fixture();d.stations.push({id:'extra',name:'Surrounding stop'});d.routes[0].stations.push({id:'extra',x:300,z:300});const edits={'Surrounding stop':{x:333,y:444},'Folityn Centralny':{x:20,y:90}};const m=model.build(d,config,edits);assert.equal(m.nodes.get('Surrounding stop').x,333);assert.equal(m.nodes.get('Surrounding stop').y,444);assert.equal(m.nodes.get('Folityn Centralny').x,0);assert.equal(edits['Surrounding stop'].x,333);
@@ -81,3 +98,4 @@ test('suburban approaches continue through their junctions instead of doubling b
   assert.ok((ux*vx+uy*vy)/(Math.hypot(ux,uy)*Math.hypot(vx,vy))>=-.01,keys.join(' → '));
  }
 });
+
